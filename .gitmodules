@@ -47,3 +47,6 @@
 	path = projects/nebula-demo
 	url = https://github.com/gscept/nebula-demo.git
 	branch = master
+[submodule "projects/terrain-editor"]
+	path = projects/terrain-editor
+	url = https://github.com/marwac-9/terrain-editor.git
