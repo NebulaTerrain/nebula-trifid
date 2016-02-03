@@ -126,6 +126,7 @@ LevelEditor2App::Open()
         // templates need to be parsed from tookit first to add virtual templates with their attributes
         this->blueprintManager->ParseTemplates("toolkit:data/tables/db");
         this->blueprintManager->ParseTemplates("proj:data/tables/db");
+		this->blueprintManager->SetTemplateTargetFolder("proj:data/tables/db");
 
 
         this->blueprintManager->UpdateAttributeProperties();
@@ -194,6 +195,9 @@ LevelEditor2App::SetupStateHandlers()
 
 	// give reference of the editorstate to the entity treeview
 	this->editorWindow->GetEntityTreeWidget()->SetEditorState(this->editorState);
+
+	// setup stuff in the editor window which must happen after all systems have been setup
+	this->editorWindow->Setup();
 }
 
 //------------------------------------------------------------------------------

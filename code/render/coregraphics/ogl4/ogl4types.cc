@@ -289,9 +289,11 @@ OGL4Types::AsOGL4SymbolicType(VertexComponent::Format f)
         case VertexComponent::Float3:   return GL_FLOAT;
         case VertexComponent::Float4:   return GL_FLOAT;
         case VertexComponent::UByte4:   return GL_UNSIGNED_BYTE;
+		case VertexComponent::Byte4:	return GL_BYTE;
         case VertexComponent::Short2:   return GL_SHORT;
         case VertexComponent::Short4:   return GL_SHORT;
-        case VertexComponent::UByte4N:  return GL_UNSIGNED_BYTE;
+		case VertexComponent::UByte4N:  return GL_UNSIGNED_BYTE;
+		case VertexComponent::Byte4N:	return GL_BYTE;
         case VertexComponent::Short2N:  return GL_SHORT;
         case VertexComponent::Short4N:  return GL_SHORT;
         default:                        
@@ -314,9 +316,11 @@ OGL4Types::AsOGL4Size(CoreGraphics::VertexComponent::Format f)
 	case VertexComponent::Float3:   return 12;
 	case VertexComponent::Float4:   return 16;
 	case VertexComponent::UByte4:   return 4;
+	case VertexComponent::Byte4:    return 4;
 	case VertexComponent::Short2:   return 4;
 	case VertexComponent::Short4:   return 8;
 	case VertexComponent::UByte4N:  return 4;
+	case VertexComponent::Byte4N:   return 4;
 	case VertexComponent::Short2N:  return 4;
 	case VertexComponent::Short4N:  return 8;
 	default:                        
@@ -338,9 +342,11 @@ OGL4Types::AsOGL4NumComponents(CoreGraphics::VertexComponent::Format f)
 	case VertexComponent::Float3:   return 3;
 	case VertexComponent::Float4:   return 4;
 	case VertexComponent::UByte4:   return 4;
+	case VertexComponent::Byte4:    return 4;
 	case VertexComponent::Short2:   return 2;
 	case VertexComponent::Short4:   return 4;
 	case VertexComponent::UByte4N:  return 4;
+	case VertexComponent::Byte4N:   return 4;
 	case VertexComponent::Short2N:  return 2;
 	case VertexComponent::Short4N:  return 4;
 	default:                        
@@ -444,18 +450,45 @@ OGL4Types::AsOGL4Access( Base::ResourceBase::Access access )
 //------------------------------------------------------------------------------
 /**
 */
-GLuint 
-OGL4Types::AsOGL4Usage( Base::ResourceBase::Usage usage )
+GLuint
+OGL4Types::AsOGL4Usage(Base::ResourceBase::Usage usage, Base::ResourceBase::Access access)
 {
 	switch (usage)
 	{
 	case ResourceBase::UsageImmutable:
+		switch (access)
+		{
+		case ResourceBase::AccessRead:
+			return GL_STATIC_READ;
+		case ResourceBase::AccessWrite:
+		case ResourceBase::AccessReadWrite:
+			return GL_STATIC_COPY;
+		case ResourceBase::AccessNone:
+			return GL_STATIC_DRAW;
+		}
 		return GL_STATIC_DRAW;
 	case ResourceBase::UsageCpu:
-		return GL_STREAM_DRAW;
+		switch (access)
+		{
+		case ResourceBase::AccessRead:
+			return GL_STREAM_READ;
+		case ResourceBase::AccessWrite:
+		case ResourceBase::AccessReadWrite:
+			return GL_STREAM_COPY;
+		case ResourceBase::AccessNone:
+			return GL_STREAM_DRAW;
+		}
 	case ResourceBase::UsageDynamic:
-		return GL_DYNAMIC_DRAW;
-
+		switch (access)
+		{
+		case ResourceBase::AccessRead:
+			return GL_DYNAMIC_READ;
+		case ResourceBase::AccessWrite:
+		case ResourceBase::AccessReadWrite:
+			return GL_DYNAMIC_COPY;
+		case ResourceBase::AccessNone:
+			return GL_DYNAMIC_DRAW;
+		}
 	default:
 		n_error("OGL4Types::AsOGL4Usage: invalid usage flag!");
 		return 0;
