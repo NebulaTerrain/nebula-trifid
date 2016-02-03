@@ -47,3 +47,6 @@
 	path = projects/nebula-demo
 	url = https://github.com/gscept/nebula-demo.git
 	branch = master
+[submodule "projects/terrain-renderer"]
+	path = projects/terrain-renderer
+	url = https://github.com/Pipirongu/terrain-renderer.git
