@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<NebulaT>
+    <Surface template="MyStatic">
+        <Param name="HeightMap" value="tex:examples/heighMap" />
+        <Param name="HeightMultiplier" value="10.000000" />
+    </Surface>
+</NebulaT>
