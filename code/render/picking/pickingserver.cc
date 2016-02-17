@@ -298,7 +298,9 @@ PickingServer::FetchDepth( const Math::float2& position )
 	int xCoord = (int)position.x();
 	int yCoord = tex->GetHeight() - (int)position.y();
 #endif	
-
+	// clamp within texture bounds
+	xCoord = Math::n_iclamp(xCoord, 0, tex->GetWidth() - 1);
+	yCoord = Math::n_iclamp(yCoord, 0, tex->GetHeight() - 1);
 	// calculate offset in buffer
 	int offset = width * (yCoord - 1) + xCoord;
 
