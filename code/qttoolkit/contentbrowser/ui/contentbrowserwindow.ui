@@ -224,6 +224,7 @@
     <addaction name="actionShow_Audio_Info"/>
     <addaction name="actionShow_Animation_Info"/>
     <addaction name="actionShow_Mesh_Info"/>
+    <addaction name="actionShow_Terrain_Tools"/>
     <addaction name="actionShow_PostEffect_Controls"/>
     <addaction name="actionShow_Shady"/>
     <addaction name="actionShow_UI_Info"/>
@@ -386,7 +387,7 @@
           <x>0</x>
           <y>0</y>
           <width>91</width>
-          <height>102</height>
+          <height>86</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout">
@@ -457,7 +458,7 @@
           <x>0</x>
           <y>0</y>
           <width>91</width>
-          <height>102</height>
+          <height>86</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout_4">
@@ -522,7 +523,7 @@
           <x>0</x>
           <y>0</y>
           <width>91</width>
-          <height>102</height>
+          <height>86</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout_11">
@@ -590,7 +591,7 @@
           <x>0</x>
           <y>0</y>
           <width>91</width>
-          <height>102</height>
+          <height>86</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout_13">
@@ -658,7 +659,7 @@
           <x>0</x>
           <y>0</y>
           <width>91</width>
-          <height>102</height>
+          <height>86</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout_14">
@@ -726,7 +727,7 @@
           <x>0</x>
           <y>0</y>
           <width>91</width>
-          <height>102</height>
+          <height>86</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout_15">
@@ -785,7 +786,7 @@
           <x>0</x>
           <y>0</y>
           <width>91</width>
-          <height>102</height>
+          <height>86</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout_17">
@@ -797,6 +798,65 @@
          </property>
          <item row="0" column="0">
           <widget class="QFrame" name="materialDockFrame">
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Plain</enum>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="terrainDockWidget">
+   <property name="floating">
+    <bool>true</bool>
+   </property>
+   <property name="windowTitle">
+    <string>Terrain</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_8">
+    <layout class="QGridLayout" name="gridLayout_18">
+     <property name="margin">
+      <number>0</number>
+     </property>
+     <property name="spacing">
+      <number>0</number>
+     </property>
+     <item row="0" column="0">
+      <widget class="QScrollArea" name="scrollArea_6">
+       <property name="frameShape">
+        <enum>QFrame::NoFrame</enum>
+       </property>
+       <property name="widgetResizable">
+        <bool>true</bool>
+       </property>
+       <widget class="QWidget" name="scrollAreaWidgetContents_8">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>91</width>
+          <height>86</height>
+         </rect>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_19">
+         <property name="margin">
+          <number>0</number>
+         </property>
+         <property name="spacing">
+          <number>0</number>
+         </property>
+         <item row="0" column="0">
+          <widget class="QFrame" name="terrainDockFrame">
            <property name="frameShape">
             <enum>QFrame::StyledPanel</enum>
            </property>
@@ -1055,6 +1115,11 @@
   <action name="actionQuit">
    <property name="text">
     <string>Quit</string>
+   </property>
+  </action>
+  <action name="actionShow_Terrain_Tools">
+   <property name="text">
+    <string>Show Terrain Tools</string>
    </property>
   </action>
  </widget>

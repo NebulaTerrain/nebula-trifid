@@ -105,6 +105,11 @@ FILE(GLOB HEAD "code/widgets/particles/*.h")
 SOURCE_GROUP("contentbrowser\\widgets\\particles" FILES ${SRC} ${HEAD})
 LIST(APPEND CODE ${SRC} ${HEAD})
 
+FILE(GLOB SRC "code/widgets/terrain/*.cc")
+FILE(GLOB HEAD "code/widgets/terrain/*.h")
+SOURCE_GROUP("contentbrowser\\widgets\\terrain" FILES ${SRC} ${HEAD})
+LIST(APPEND CODE ${SRC} ${HEAD})
+
 FILE(GLOB SRC "code/materials/*.cc")
 FILE(GLOB HEAD "code/materials/*.h")
 SOURCE_GROUP("contentbrowser\\materials" FILES ${SRC} ${HEAD})
@@ -137,6 +142,7 @@ SET(QTMOCFILES  "code/contentbrowserwindow.h"
 				"code/widgets/ui/uihandler.h"
 				"code/widgets/particles/particlecurvewidget.h"
 				"code/widgets/particles/particleenvelopewidget.h"
+				"code/widgets/terrain/terrainhandler.h"
 				"code/modelimporter/fbx/nfbxreader.h")
 								
 SET(PCH_files	

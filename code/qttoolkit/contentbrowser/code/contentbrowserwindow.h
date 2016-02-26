@@ -34,6 +34,7 @@
 #include "nody/shady/code/shadywindow.h"
 #include "resourcebrowser/code/assetbrowser.h"
 #include "code/tiledgraphicsview.h"
+#include "widgets/terrain/terrainhandler.h"
 
 namespace Widgets
 {
@@ -171,6 +172,8 @@ private slots:
 	void OnShowUIInfo();
 	/// displays animation info if its pressed
 	void OnShowAnimationInfo();
+	/// displays terrain tools if it's pressed
+	void OnShowTerrainTools();
 	
 	/// displays post effect controller
 	void OnShowPostEffectController();
@@ -227,6 +230,8 @@ private:
 	Ptr<Widgets::ModelHandler> modelHandler;
 	Ptr<Widgets::TextureHandler> textureHandler;
     Ptr<Widgets::MaterialHandler> materialHandler;
+	Ptr<Widgets::TerrainHandler> terrainHandler;
+
 	Util::Array<Widgets::BaseItem*> items;
 	Widgets::ModelItem* modelItem;
 	Widgets::AnimationItem* animItem;
@@ -260,6 +265,7 @@ private:
 	Ui::AudioInfoWidget audioInfoUi;
 	Ui::UIInfoWidget uiInfoUi;
     Ui::MaterialInfoWidget materialInfoUi;
+	Ui::TerrainWidget terrainToolsUi;
     LibraryTreeWidget* libraryTree;
 
 	QDockWidget* modelInfoWindow;
@@ -269,6 +275,7 @@ private:
 	QDockWidget* uiInfoWindow;
 	QDockWidget* animationInfoWindow;
     QDockWidget* materialInfoWindow;
+	QDockWidget* terrainToolsWindow;
 
 	QDialog particleEffectWizard;
 }; 

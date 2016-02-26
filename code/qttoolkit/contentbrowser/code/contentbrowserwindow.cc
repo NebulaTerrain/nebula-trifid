@@ -76,6 +76,7 @@ ContentBrowserWindow::ContentBrowserWindow() :
     meshHandler(0),
     modelHandler(0),
     textureHandler(0),
+	terrainHandler(0),
 	uiHandler(0),
 	wireFrame(false),
 	showAmbientOcclusion(true),
@@ -119,6 +120,11 @@ ContentBrowserWindow::ContentBrowserWindow() :
 	this->uiInfoWindow = this->ui.uiDockWidget;
 	this->uiInfoWindow->setVisible(false);
 	this->uiInfoUi.setupUi(this->ui.uiDockFrame);
+
+	// setup terrain tools
+	this->terrainToolsWindow = this->ui.terrainDockWidget;
+	this->terrainToolsWindow->setVisible(false);
+	this->terrainToolsUi.setupUi(this->ui.terrainDockFrame);
 
     // setup mesh info
 	this->meshInfoWindow = this->ui.meshDockWidget;
@@ -174,6 +180,7 @@ ContentBrowserWindow::ContentBrowserWindow() :
 	this->textureHandler = TextureHandler::Create();
 	this->uiHandler = UIHandler::Create();
     this->materialHandler = MaterialHandler::Create();
+	this->terrainHandler = TerrainHandler::Create();
 
     // setup material UI
     this->materialHandler->SetUI(&this->materialInfoUi);
@@ -183,6 +190,9 @@ ContentBrowserWindow::ContentBrowserWindow() :
 
 	// setup texture UI
 	this->textureHandler->SetUI(&this->textureInfoUi);
+
+	// setup terrain UI
+	this->terrainHandler->SetUI(&this->terrainToolsUi);
 
 	// create and setup progress reporter
 	this->progressReporter = ProgressReporter::Create();
@@ -219,6 +229,7 @@ ContentBrowserWindow::ContentBrowserWindow() :
 	connect(this->ui.actionShow_UI_Info, SIGNAL(triggered()), this, SLOT(OnShowUIInfo()));
 	connect(this->ui.actionShow_Animation_Info, SIGNAL(triggered()), this, SLOT((OnShowAnimationInfo)));
 	connect(this->ui.actionShow_Mesh_Info, SIGNAL(triggered()), this, SLOT(OnShowMeshInfo()));
+	connect(this->ui.actionShow_Terrain_Tools, SIGNAL(triggered()), this, SLOT(OnShowTerrainTools()));
 	connect(this->ui.actionShow_PostEffect_Controls, SIGNAL(triggered()), this, SLOT(OnShowPostEffectController()));
 	connect(this->ui.actionCreate_Particle, SIGNAL(triggered()), this, SLOT(OnCreateParticleEffect()));
 	connect(this->ui.actionConnect_with_Level_Editor, SIGNAL(triggered()), this, SLOT(OnConnectToLevelEditor()));
@@ -339,6 +350,10 @@ ContentBrowserWindow::closeEvent( QCloseEvent *e )
         canClose &= this->materialHandler->Discard();
     }
 
+	if (this->terrainHandler->IsSetup())
+	{
+		canClose &= this->terrainHandler->Discard();
+	}
 	// abort window close if any handler is to be discarded
 	if (!canClose)
 	{
@@ -386,6 +401,8 @@ ContentBrowserWindow::closeEvent( QCloseEvent *e )
 	this->materialHandler = 0;
 	this->uiHandler->Cleanup();
 	this->uiHandler = 0;
+	this->terrainHandler->Cleanup();
+	this->terrainHandler = 0;
 
 	// delete windows
 	this->textureImporterWindow->close();
@@ -2118,6 +2135,12 @@ ContentBrowserWindow::OnShowAnimationInfo()
 	*/
 }
 
+void ContentBrowserWindow::OnShowTerrainTools()
+{
+	this->terrainToolsWindow->show();
+	this->terrainToolsWindow->raise();
+}
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -2431,6 +2454,7 @@ ContentBrowserWindow::OnFrame()
 	if (this->modelHandler.isvalid() && this->modelHandler->IsSetup()) this->modelHandler->OnFrame();
 	if (this->textureHandler.isvalid() && this->textureHandler->IsSetup()) this->textureHandler->OnFrame();
 	if (this->materialHandler.isvalid() && this->materialHandler->IsSetup()) this->materialHandler->OnFrame();
+	if (this->terrainHandler.isvalid() && this->terrainHandler->IsSetup()) this->terrainHandler->OnFrame();
 }
 
 //------------------------------------------------------------------------------
