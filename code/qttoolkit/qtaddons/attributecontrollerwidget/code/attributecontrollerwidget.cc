@@ -20,6 +20,7 @@
 #include "colourcontroller.h"
 #include "animclipcontroller.h"
 #include "toolkit/editorfeatures/editorblueprintmanager.h"
+#include "physicsmaterialcontroller.h"
 
 using namespace Util;
 using namespace Attr;
@@ -54,6 +55,11 @@ AttributeControllerWidget::AttributeControllerWidget(const Ptr<Game::Entity>& en
 	if (blueprintManager->HasAttributeByName(attrId.GetName()))
 	{
 		Ptr<Tools::IDLAttribute> idl = blueprintManager->GetAttributeByName(attrId.GetName());
+		if (idl->HasDisplayName())
+		{
+			this->ui->nameLabel->setText(idl->GetDisplayName().AsCharPtr());			
+			this->ui->nameLabel->setToolTip(attrId.GetName().AsCharPtr());
+		}				
 		if (idl->GetAttributes().Contains("editType"))
 		{
 			this->InitInputWidget(entity, idl);
@@ -91,6 +97,10 @@ AttributeControllerWidget::InitInputWidget(const Ptr<Game::Entity>& entity, cons
 	{
 		controller = new AnimClipController(this, entity, idl);
 	}
+    else if (editType == "physicmaterial")
+    {
+        controller = new PhysicsMaterialController(this, entity, idl);
+    }
 	this->ui->verticalLayout->addWidget(controller);
 	n_assert(0 == this->baseAttributeController);
 	this->baseAttributeController = controller;

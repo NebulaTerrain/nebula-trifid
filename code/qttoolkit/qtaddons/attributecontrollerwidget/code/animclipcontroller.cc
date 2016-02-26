@@ -43,10 +43,22 @@ AnimClipController::AnimClipController(QWidget* parent, const Ptr<Game::Entity>&
 	Ptr<GraphicsFeature::GetModelEntity> entityMsg = GraphicsFeature::GetModelEntity::Create();
 	__SendSync(entity,entityMsg);
 
-	Ptr<Graphics::FetchClips> clipsMsg = Graphics::FetchClips::Create();
-	__Send(entityMsg->GetEntity(), clipsMsg);
-	__SingleFireCallback(AnimClipController, OnFetchedClipList, this, clipsMsg.upcast<Messaging::Message>());
-	
+	this->ui->comboBox->setEnabled(false);
+	if (entityMsg->GetEntity().isvalid())
+	{
+		Ptr<Graphics::FetchClips> clipsMsg = Graphics::FetchClips::Create();
+		__Send(entityMsg->GetEntity(), clipsMsg);
+		if (clipsMsg->Handled())
+		{
+			this->OnFetchedClipList(clipsMsg.upcast<Messaging::Message>());
+		}
+		else
+		{
+			// should never happen in a tools context as all models are loaded synchronously anyway
+			__SingleFireCallback(AnimClipController, OnFetchedClipList, this, clipsMsg.upcast<Messaging::Message>());
+		}
+		
+	}		
 }
 
 //------------------------------------------------------------------------------
@@ -94,20 +106,22 @@ AnimClipController::OnFetchedClipList(const Ptr<Messaging::Message>& msg)
 	const Ptr<Graphics::FetchClips>& clipMsg = msg.downcast<Graphics::FetchClips>();
 	const Util::Array<Util::StringAtom>& clips(clipMsg->GetClips());
 	
-	if (clips.Size() == 0)
+	if (this->entity.isvalid())
 	{
-		this->ui->comboBox->addItem(this->currentValue.AsCharPtr());
-		this->ui->comboBox->setCurrentIndex(0);
-		this->ui->comboBox->setEnabled(false);
-		return;
+		if (clips.Size() == 0)
+		{
+			this->ui->comboBox->addItem(this->currentValue.AsCharPtr());
+			this->ui->comboBox->setCurrentIndex(0);
+			return;
+		}
+
+		bool connected = false;
+		connected = connect(this->ui->comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(currentIndexChanged(int)));
+		n_assert(connected);
+
+		this->ui->comboBox->setEnabled(true);
+		this->SetClips(clips, this->currentValue);
 	}
-
-	bool connected = false;
-	connected = connect(this->ui->comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(currentIndexChanged(int)));
-	n_assert(connected);
-
-	this->ui->comboBox->setEnabled(true);	
-	this->SetClips(clips, this->currentValue);
 }
 
 //------------------------------------------------------------------------------

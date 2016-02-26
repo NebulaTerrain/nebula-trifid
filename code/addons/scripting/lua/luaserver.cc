@@ -99,6 +99,27 @@ LuaServer::LuaStringReader(lua_State* /*s*/, LuaStringReaderData* data, size_t* 
 
 //------------------------------------------------------------------------------
 /**
+*/
+void
+LuaServer::AddLuaPath(const IO::URI & path)
+{	
+	lua_getglobal(this->luaState, "package");
+	lua_getfield(this->luaState, -1, "path"); // get field "path" from table at top of stack (-1)
+	Util::String cur_path = lua_tostring(this->luaState, -1); // grab path string from top of stack
+	cur_path.Append(";"); // do your path magic here
+	Util::String extrapath = path.LocalPath();
+#ifdef WIN32
+	extrapath.SubstituteChar('/', '\\');
+#endif
+	cur_path.Append(extrapath);
+	lua_pop(this->luaState, 1); // get rid of the string on the stack we just pushed on line 5
+	lua_pushstring(this->luaState, cur_path.AsCharPtr()); // push the new one
+	lua_setfield(this->luaState, -2, "path"); // set the field "path" in table at -2 with value at top of stack
+	lua_pop(this->luaState, 1); // get rid of package table from top of stack			
+}
+
+//------------------------------------------------------------------------------
+/**
     This is the global callback function for all custom LUA commands which
     have been created with RegisterCommand().
 */
@@ -157,8 +178,20 @@ LuaServer::LuaFunctionCallback(lua_State* s)
 					break;
 				case Arg::Matrix44:
 					{
-						Util::String matString = lua_tostring(luaServer->luaState, argIndex + 1);
-						curArg.SetMatrix44(matString.AsMatrix44());
+						Math::matrix44 m;
+						int count = 1;
+						for (int x = 0; x < 4 ; x++)
+						{
+							Math::float4 &row = m.row(x);
+							for (int y = 0; y < 4; y++)
+							{
+								lua_pushinteger(luaServer->luaState, count++);
+								lua_gettable(luaServer->luaState, argIndex + 1);
+								row[y] = (float)lua_tonumber(luaServer->luaState, -1);
+							}
+						}
+						//Util::String matString = lua_tostring(luaServer->luaState, argIndex + 1);
+						curArg.SetMatrix44(m);//matString.AsMatrix44());
 					}
 					break;
                 default:
@@ -270,9 +303,24 @@ LuaServer::LuaFunctionCallback(lua_State* s)
 
 				case Arg::Matrix44:
 					{
+						 Math::matrix44 m = curArg.GetMatrix44();
+						lua_newtable(luaServer->luaState);
+						int tableIndex = lua_gettop(luaServer->luaState);
+						int count = 1;
+						IndexT i;
+						for (i = 0; i < 4;i++)
+						{
+							Math::float4 row = m.row(i);
+							for (int j = 0; j < 4;j++)
+							{
+								lua_pushnumber(luaServer->luaState, count++);
+								lua_pushnumber(luaServer->luaState, row[j]);
+								lua_settable(luaServer->luaState, tableIndex);
+							}							
+						}
 						/// treat as opaque string
-						Util::String mat = Util::String::FromMatrix44(curArg.GetMatrix44());
-						lua_pushstring(luaServer->luaState, mat.AsCharPtr());
+						//Util::String mat = Util::String::FromMatrix44(curArg.GetMatrix44());
+						//lua_pushstring(luaServer->luaState, mat.AsCharPtr());
 					}
 					break;
 
@@ -308,12 +356,9 @@ LuaServer::Open()
         n_assert(0 != this->luaState);
 
         // provide access to some standard libraries
-        luaopen_base(this->luaState);
-        luaopen_string(this->luaState);
-        luaopen_table(this->luaState);
-        luaopen_math(this->luaState);
-        luaopen_debug(this->luaState);		
-
+		luaL_openlibs(this->luaState);        		
+		this->AddLuaPath("scr:/?/init.lua");
+		this->AddLuaPath("scr:/?.lua");
         return true;
     }
     return false;

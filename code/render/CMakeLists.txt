@@ -109,6 +109,8 @@ ENDIF()
       characters/characterinstance.h
       characters/characterjoint.cc
       characters/characterjoint.h
+	  characters/characterjointmask.cc
+      characters/characterjointmask.h
 	  characters/charjointinfo.h
       characters/characternode.cc
       characters/characternode.h
@@ -777,6 +779,8 @@ ENDIF()
 	  graphics/lightprobeentity.h
       graphics/modelentity.cc
       graphics/modelentity.h
+	  graphics/reloadmodelentity.cc
+      graphics/reloadmodelentity.h	  
       graphics/mouserenderer.cc
       graphics/mouserenderer.h
       graphics/pointlightentity.cc

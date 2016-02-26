@@ -49,6 +49,8 @@ LevelEditorState::LevelEditorState() :
 	defaultCam(0),
 	activeTransformAction(0),
 	showPerformance(false),
+	lastFrameTime(1),
+	lastUpdateFpsTime(1),
 	performanceFrame(0)
 {	
 	this->activateSelectionZoom = Input::Key::F;
@@ -113,7 +115,13 @@ LevelEditorState::OnFrame()
 			}
 
 			// produce UI
-			ImGui::Text("FPS: %.2f", 1 / FrameSync::FrameSyncTimer::Instance()->GetFrameTime());
+			Timing::Time frame = FrameSync::FrameSyncTimer::Instance()->GetTime();
+			if (frame - this->lastUpdateFpsTime > 1.5)
+			{
+				this->lastFrameTime = FrameSync::FrameSyncTimer::Instance()->GetFrameTime();
+				this->lastUpdateFpsTime = frame;
+			}
+			ImGui::Text("FPS: %.2f", 1 / this->lastFrameTime);
 			ImGui::Text("Number of draw calls: %d", drawcallHistory.IsEmpty() ? 0 : drawcallHistory.Back());
 			if (!drawcallHistory.IsEmpty())	ImGui::PlotLines("Draw calls", drawcallHistoryBuffer, Math::n_min(drawcallHistory.Size(), 90), 0, NULL, 0, 3000, ImVec2(200, 100));
 
@@ -149,7 +157,7 @@ LevelEditorState::HandleInput()
 	}
 	
 	bool handled = false;
-	if (this->selectionUtil->HasSelection())
+	if (this->selectionUtil->HasSelection() && !this->selectionUtil->IsInDrag())
 	{
 		handled = this->placementUtil->HandleInput();
 	}
@@ -179,6 +187,11 @@ LevelEditorState::OnStateEnter( const Util::String& prevState )
 	// create camera
 	this->defaultCam = BaseGameFeature::FactoryManager::Instance()->CreateEntityByTemplate("Camera", "Camera");
 	this->defaultCam->SetBool(Attr::MayaCameraRenderCenterOfInterest, true);
+	this->defaultCam->SetFloat4(Attr::MayaCameraCenterOfInterest, Math::float4(0, 0, 0, 1));
+	Math::matrix44 camTrans;
+	camTrans.set_position(Math::float4(10, 10, 10, 1));
+	this->defaultCam->SetMatrix44(Attr::Transform, camTrans);
+	this->defaultCam->SetFloat4(Attr::MayaCameraCenterOfInterest, Math::float4(0, 0, 0, 1));	
 	BaseGameFeature::EntityManager::Instance()->AttachEntity(defaultCam);
 
 	// create selection and placement utility
@@ -188,11 +201,6 @@ LevelEditorState::OnStateEnter( const Util::String& prevState )
 	this->placementUtil->SetCameraEntity(this->defaultCam);
 
 	Physics::PhysicsServer::Instance()->GetScene()->SetGravity(Math::vector(0,0,0));
-
-	// enable graphics-based picking
-	Ptr<EnablePicking> picking = EnablePicking::Create();
-	picking->SetEnabled(true);
-	GraphicsInterface::Instance()->Send(picking.upcast<Messaging::Message>());
 
 	// check for settings
 	BaseGameFeature::UserProfile* userProfile = BaseGameFeature::LoaderServer::Instance()->GetUserProfile();  
@@ -213,6 +221,10 @@ LevelEditorState::OnStateEnter( const Util::String& prevState )
 	this->consoleHandler = Dynui::ImguiConsoleHandler::Create();
 	this->consoleHandler->Setup();
 
+	// setup picking server
+	this->pickingServer = Picking::PickingServer::Create();
+	this->pickingServer->Open();
+
 	// setup performance buffers
 	this->drawcallBuffer.SetCapacity(90);
 	this->primitivesBuffer.SetCapacity(90);
@@ -225,6 +237,9 @@ LevelEditorState::OnStateEnter( const Util::String& prevState )
 void 
 LevelEditorState::OnStateLeave( const Util::String& nextState )
 {
+	this->pickingServer->Close();
+	this->pickingServer = 0;
+
 	this->consoleHandler->Discard();
 	this->consoleHandler = 0;
 	this->console->Discard();

@@ -126,6 +126,7 @@ LevelEditor2App::Open()
         // templates need to be parsed from tookit first to add virtual templates with their attributes
         this->blueprintManager->ParseTemplates("toolkit:data/tables/db");
         this->blueprintManager->ParseTemplates("proj:data/tables/db");
+		this->blueprintManager->SetTemplateTargetFolder("proj:data/tables/db");
 
 
         this->blueprintManager->UpdateAttributeProperties();
@@ -329,6 +330,10 @@ LevelEditor2App::SetupGameFeatures()
     Commands::PhysicsProtocol::Register();
     Commands::GraphicsFeatureProtocol::Register();
     Commands::BaseGameProtocol::Register();	
+	Commands::LeveleditorCommands::Register();
+	Commands::LevelEditor2Protocol::Register();
+
+	this->ScanPropertyScripts();
 
 	// open light probe manager
 	this->lightProbeManager->Open();
@@ -347,6 +352,9 @@ LevelEditor2App::SetupGameFeatures()
 
     // register input proxy for inputs from nebula to the qt app
     this->qtFeature->RegisterQtInputProxy(this->editorWindow);	
+
+	// set all resource mappers to be synchronized
+	Resources::ResourceManager::Instance()->SetMappersAsync(false);
 
 	// close splash
 	this->splash->Close();
@@ -422,8 +430,8 @@ LevelEditor2App::CleanupGameFeatures()
 */
 void 
 LevelEditor2App::DuplicateCurrentSelection()
-{
-	Util::Array<Ptr<Game::Entity>> entities = SelectionUtil::Instance()->GetSelectedEntities();		
+{    
+	Util::Array<Ptr<Game::Entity>> entities = SelectionUtil::Instance()->GetSelectedEntities(true);		
 	Ptr<DuplicateAction> dpl = DuplicateAction::Create();
 	dpl->SetEntities(entities);
 	Util::String msg;
@@ -473,15 +481,31 @@ LevelEditor2App::GroupSelection()
 	{
 		EntityGuid realId = LevelEditor2EntityManager::Instance()->GetEntityById(id)->GetGuid(Attr::EntityGuid);
 		Util::Array<Ptr<Game::Entity>> entities = SelectionUtil::Instance()->GetSelectedEntities();
+		bool sameParent = true;
+		EntityGuid lastGuid = entities[0]->GetGuid(Attr::ParentGuid);
 		for(IndexT i = 0 ; i < entities.Size() ; i++)
-		{
-			if(!entities[i]->GetGuid(Attr::ParentGuid).IsValid())
+		{	
+			EntityGuid next = entities[i]->GetGuid(Attr::ParentGuid);
+			if (next != lastGuid)
 			{
-				entities[i]->SetGuid(Attr::ParentGuid,realId);
-			}				
+				sameParent = false;
+			}
+			entities[i]->SetGuid(Attr::ParentGuid,realId);
+							
+		}
+		if (sameParent && lastGuid.IsValid())
+		{
+			LevelEditor2EntityManager::Instance()->GetEntityById(id)->SetGuid(Attr::ParentGuid, lastGuid);
 		}
 		LevelEditor2App::Instance()->GetWindow()->GetEntityTreeWidget()->RebuildTree();
-	}		
+		Ptr<SelectAction> action = SelectAction::Create();
+		action->SetSelectionMode(SelectAction::SetSelection);
+		Util::Array<EntityGuid> node;
+		node.Append(id);
+		action->SetEntities(node);
+		ActionManager::Instance()->PerformAction(action.cast<Action>());
+		LevelEditor2App::Instance()->GetWindow()->GetEntityTreeWidget()->GetEntityTreeItem(id)->setExpanded(true);
+	}			
 }
 
 //------------------------------------------------------------------------------
@@ -494,7 +518,7 @@ LevelEditor2App::FocusOnSelection()
 	if(SelectionUtil::Instance()->HasSelection())
 	{
 		// Pass values to property
-		bbox boundingBox = SelectionUtil::Instance()->GetGroupBox(); // bad, using the group box since it will be updated even if grouping isn't active
+		bbox boundingBox = SelectionUtil::CalculateGroupBox(SelectionUtil::Instance()->GetSelectedEntityIds());
 		Ptr<Game::Entity> camera_entity = PlacementUtil::Instance()->GetCameraEntity();
 		Ptr<GraphicsFeature::MayaCameraProperty> cameraProperty = camera_entity->FindProperty(GraphicsFeature::MayaCameraProperty::RTTI).downcast<GraphicsFeature::MayaCameraProperty>();
 		cameraProperty->SetCameraFocus( boundingBox.center(), boundingBox.diagonal_size() );
@@ -507,7 +531,7 @@ LevelEditor2App::FocusOnSelection()
 void 
 LevelEditor2App::CenterOnSelection()
 {
-	Util::Array< Ptr<Game::Entity>> entities = SelectionUtil::Instance()->GetSelectedEntities();
+	Util::Array<EntityGuid> entities = SelectionUtil::Instance()->GetSelectedEntityIds();
 
 	// If none is selected, do nothing
 	if( entities.IsEmpty() )
@@ -515,16 +539,9 @@ LevelEditor2App::CenterOnSelection()
 		return;
 	}
 
-	Math::point centerOfInterest;
-	if( entities.Size() > 1 || SelectionUtil::Instance()->InGroupMode() )
-	{
-		centerOfInterest = SelectionUtil::Instance()->GetGroupBox().center();
-	}
-	else
-	{
-		centerOfInterest = entities[0]->GetMatrix44(Attr::Transform).get_position();
-	}
-
+	Math::bbox boundingBox = SelectionUtil::CalculateGroupBox(entities);
+	Math::point centerOfInterest = boundingBox.center();
+	
 	// Pass it to camera property
 	Ptr<Game::Entity> camera_entity =  PlacementUtil::Instance()->GetCameraEntity();
 	Ptr<GraphicsFeature::MayaCameraProperty> cameraProperty = camera_entity->FindProperty(GraphicsFeature::MayaCameraProperty::RTTI).downcast<GraphicsFeature::MayaCameraProperty>();
@@ -593,6 +610,77 @@ LevelEditor2App::UpdateNavMesh()
         Ptr<LevelEditor2::UpdateNavMesh> msg = LevelEditor2::UpdateNavMesh::Create();
         ents[0]->SendSync(msg.cast<Messaging::Message>());
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+LevelEditor2App::ScanPropertyScripts()
+{
+	if (IO::IoServer::Instance()->DirectoryExists("toolkit:data/leveleditor/scripts"))
+	{
+		Util::Array<Util::String> files = IO::IoServer::Instance()->ListFiles("toolkit:data/leveleditor/scripts", "*.lua", true);
+		for (int i = 0; i < files.Size(); i++)
+		{
+			Util::String script = IO::IoServer::Instance()->ReadFile(files[i]);
+			if (Scripting::ScriptServer::Instance()->ScriptHasFunction(script, "__property_init"))
+			{
+				Scripting::ScriptServer::Instance()->Eval(script);
+				Scripting::ScriptServer::Instance()->Eval("__property_init()");
+			}
+		}
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+LevelEditor2App::RegisterPropertyCallback(const Util::String & propertyClass, const Util::String & displayName, const Util::String & scriptFunc)
+{
+	PropertyCallbackEntry entry = { displayName, scriptFunc };
+	if (!this->propertyCallbacks.Contains(propertyClass))
+	{
+		Util::Array<PropertyCallbackEntry> props;		
+		props.Append(entry);
+		this->propertyCallbacks.Add(propertyClass, props);
+	}
+	else
+	{
+		this->propertyCallbacks[propertyClass].Append(entry);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Array<LevelEditor2App::PropertyCallbackEntry> &
+LevelEditor2App::GetPropertyCallbacks(const Util::String& propertyClass)
+{	
+	return this->propertyCallbacks[propertyClass];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+LevelEditor2App::HasPropertyCallbacks(const Util::String& propertyClass)
+{
+	return this->propertyCallbacks.Contains(propertyClass);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+LevelEditor2App::PropertCallback()
+{
+	QPushButton * box = (QPushButton*)QObject::sender();
+	Util::String script = box->property("script").toString().toLatin1().constData();
+	Util::String exec;
+	exec.Format(script.AsCharPtr(), box->property("entity").toUInt());
+	Scripting::ScriptServer::Instance()->Eval(exec);
 }
 
 } // namespace LevelEditor2

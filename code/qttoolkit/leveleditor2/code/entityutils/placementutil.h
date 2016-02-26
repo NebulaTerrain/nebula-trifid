@@ -74,9 +74,7 @@ public:
     /// Clears the internal list of selected matrices
     void ClearSelection();
     /// Reset all changes of the current selection and return to the state when selection was set.
-    void ResetSelection();
-	/// Set selection bounding box
-	void SetSelectionBox(const Math::bbox& selectionBox);
+    void ResetSelection();	
     
     /// Set transform mode. Is ignored if current transform feature is active
     void ToggleTransformMode(TransformMode mode);
@@ -85,13 +83,6 @@ public:
 
     /// Get current placement state
     PlacementState GetCurrentPlacementState();
-
-	const Math::matrix44& GetGroupMatrix() const { return selectionInitialGroupMatrix; }
-	void SetSelectionFocusByIndex(const int index);
-
-	void ToggleGroup();
-	void SetGroupMatrix(const Math::matrix44& matrix);
-	void EndGroupTransform();
 
 	/// Set camera entity
 	void SetCameraEntity(Ptr<Game::Entity> i_pCamera);
@@ -112,6 +103,8 @@ public:
 	/// access to the placement feature objects
 	Ptr<TransformFeature> GetPlacementFeature(TransformMode mode);
 
+	/// center pivot (only works if there is a single group node selected)
+	void CenterPivot();
 
 private:
     friend class AttributeWidgetManager;
@@ -123,8 +116,7 @@ private:
     void ApplyTransformFeatureToMatrices();
  
 	Ptr<Game::Entity> cameraEntity;
-	Math::bbox selectionBox;
-
+	
     TransformMode currentTransformMode;
     PlacementState currentPlacementState;
 
@@ -139,6 +131,7 @@ private:
     Input::Key::Code activateScaleKey;
     Input::Key::Code activateGroundPlacementKey;
     Input::Key::Code activateAxisLockKey;
+	Input::Key::Code activateGroupTranslateKey;
 	Input::Key::Code activateSnapPlacementKey;
             
     Ptr<TranslateFeature> translateFeature;         // possible transform features
@@ -148,12 +141,8 @@ private:
     Ptr<TransformFeature> currentTransformFeature;
 
 	Ptr<TransformAction> action;
-
-	bool groupMode;
-	Math::matrix44 selectedGroupMatrix;
-	Math::matrix44 selectionInitialGroupMatrix;
-	Math::matrix44 selectionFocusMatrix;
-	int selectionFocusIndex;
+	
+	bool groupPivotTranslate;	
 };
 //------------------------------------------------------------------------------
 /**

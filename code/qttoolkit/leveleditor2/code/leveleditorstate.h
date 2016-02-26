@@ -16,6 +16,7 @@
 #include "actions/transformaction.h"
 #include "dynui/console/imguiconsole.h"
 #include "dynui/console/imguiconsolehandler.h"
+#include "picking/pickingserver.h"
 
 
 //------------------------------------------------------------------------------
@@ -67,8 +68,11 @@ private:
 	Ptr<Dynui::ImguiConsoleHandler> consoleHandler;
 	Ptr<Game::Entity> defaultCam;	
 	Ptr<TransformAction> activeTransformAction;
+	Ptr<Picking::PickingServer> pickingServer;
 	Input::Key::Code activateSelectionZoom;
 
+	Timing::Time lastFrameTime;
+	Timing::Time lastUpdateFpsTime;
 	bool showPerformance;
 	int performanceFrame;
 	Util::RingBuffer<int> drawcallBuffer;

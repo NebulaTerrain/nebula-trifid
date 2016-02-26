@@ -24,6 +24,7 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QBitmap>
+#include "physicsnodeframe.h"
 
 using namespace ContentBrowser;
 using namespace ToolkitUtil;
@@ -118,6 +119,7 @@ ModelHandler::Setup()
 	this->ui->saveButton->setEnabled(true);
 	this->ui->saveAsButton->setEnabled(true);
 	this->ui->reconfigureButton->setEnabled(true);
+	this->ui->addParticleNode->setEnabled(true);
 
 	// call base class
 	BaseHandler::Setup();	
@@ -148,12 +150,17 @@ ModelHandler::Setup()
     {
 		QMessageBox box;
 		QString message;
-		message.sprintf("The model '%s' doesn't exist!", attrPath.AsCharPtr());
+		message.sprintf("The model '%s' either has inaccessible attributes or they are missing!", attrPath.AsCharPtr());
 		box.setText(message);
 		box.setIcon(QMessageBox::Warning);
 		box.setStandardButtons(QMessageBox::Close);
 		box.setDefaultButton(QMessageBox::Close);
 		box.exec();
+
+		this->ui->saveButton->setEnabled(false);
+		this->ui->saveAsButton->setEnabled(false);
+		this->ui->reconfigureButton->setEnabled(false);
+		this->ui->addParticleNode->setEnabled(false);
 
 		// discard and return
 		this->DiscardNoCancel();
@@ -337,17 +344,26 @@ ModelHandler::Refresh()
 	for (i = 0; i < this->nodeFrames.Size(); i++)
 	{
 		this->nodeFrames[i]->Discard();
+		delete this->nodeFrames[i];
 	}
-	for (i = 0; i < particleFrames.Size(); i++)
+	for (i = 0; i < this->particleFrames.Size(); i++)
 	{
 		this->particleFrames[i]->Discard();
+		delete this->particleFrames[i];
+	}
+	for (i = 0; i < this->physicsFrames.Size(); i++)
+	{
+		this->physicsFrames[i]->Discard();
+		delete this->physicsFrames[i];
 	}
 	this->nodeFrames.Clear();
 	this->particleFrames.Clear();
+	this->physicsFrames.Clear();
 
 	if (this->characterFrame)
 	{
 		this->characterFrame->Discard();
+		delete this->characterFrame;
 		this->characterFrame = 0;
 	}
 
@@ -415,6 +431,15 @@ ModelHandler::OnNewVersion()
 
 	// apply action
 	this->action->DoAndMakeCurrent();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ModelHandler::OnFrame()
+{
+	if (this->characterFrame) this->characterFrame->GetHandler()->OnFrame();
 }
 
 //------------------------------------------------------------------------------
@@ -899,6 +924,21 @@ ModelHandler::SetupTabs()
 		// add frame to tab box
 		nodeWidget->addTab(nodeFrame, "Particle");
 	}
+
+	const Array<ModelConstants::PhysicsNode>& physicsNodes = this->constants->GetPhysicsNodes();
+	if (physicsNodes.Size() > 0)
+	{
+		// add physics tab to box
+		PhysicsNodeFrame* nodeFrame = new PhysicsNodeFrame;
+		nodeWidget->addTab(nodeFrame, "Physics");
+
+		for (i = 0; i < physicsNodes.Size(); i++)
+		{
+			const ModelConstants::PhysicsNode& node = physicsNodes[i];
+			nodeFrame->GetHandler()->AddNode(node.name);
+		}
+	}
+	
 }
 
 //------------------------------------------------------------------------------

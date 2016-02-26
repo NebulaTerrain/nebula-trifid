@@ -132,6 +132,11 @@ AttributeWidgetManager::ViewEntityAttributes(const Ptr<Game::Entity>& entity)
 					this->transformController = dynamic_cast<Matrix44Controller*>(attributeController->GetControllerWidget());;
 					retrievedTransformController = true;
 				}
+				else if (attrs[i].GetAttrId() == Attr::Graphics && entityType == MultiSelection)
+				{
+					attributeController->LockWidgets();
+				}
+
 
 				// if the attribute is read only, only view their values
 				if (ReadOnly == attrs[i].GetAccessMode())
@@ -234,6 +239,19 @@ AttributeWidgetManager::ViewEntityAttributes(const Ptr<Game::Entity>& entity)
 			{
 				layout->addWidget(attrdict.ValueAtIndex(i));
 			}
+			if (entityType == Game && LevelEditor2App::Instance()->HasPropertyCallbacks(propID))
+			{
+				const Util::Array<LevelEditor2App::PropertyCallbackEntry>& callbacks = LevelEditor2App::Instance()->GetPropertyCallbacks(propID);
+				for (int i = 0; i < callbacks.Size(); i++)
+				{
+					QPushButton * button = new QPushButton(callbacks[i].displayName.AsCharPtr());
+					button->setProperty("script", callbacks[i].scriptFunction.AsCharPtr());
+					button->setProperty("entity", entity->GetUniqueId());
+					QObject::connect(button, SIGNAL(clicked()), LevelEditor2App::Instance(), SLOT(PropertCallback()));
+					layout->addWidget(button);
+				}				
+			}
+			
 			if (advanced != NULL)
 			{
 				layout->addWidget(advanced);
@@ -365,6 +383,18 @@ AttributeWidgetManager::ViewEntityAttributes(const Ptr<Game::Entity>& entity)
 				layout->addWidget(advanced);
 				advanced->setChecked(false);
 			}
+			if (LevelEditor2App::Instance()->HasPropertyCallbacks(cat))
+			{
+				const Util::Array<LevelEditor2App::PropertyCallbackEntry>& callbacks = LevelEditor2App::Instance()->GetPropertyCallbacks(cat);
+				for (int i = 0; i < callbacks.Size(); i++)
+				{
+					QPushButton * button = new QPushButton(callbacks[i].displayName.AsCharPtr());
+					button->setProperty("script", callbacks[i].scriptFunction.AsCharPtr());
+					button->setProperty("entity", entity->GetUniqueId());
+					QObject::connect(button, SIGNAL(clicked()), LevelEditor2App::Instance(), SLOT(PropertCallback()));
+					this->container->addWidget(button);
+				}
+			}
 		}
 		
 	}	
@@ -472,7 +502,7 @@ AttributeWidgetManager::OnValueChanged(QtAttributeControllerAddon::BaseAttribute
 		// call parent method: sets the value to the entity
 		CallbackManager::OnValueChanged(controller);
 	}
-
+	
 	if (Attr::Id.GetFourCC() == attrFourCC)
 	{
 		Ptr<BaseGameFeature::GetAttribute> msg = BaseGameFeature::GetAttribute::Create();
@@ -484,6 +514,18 @@ AttributeWidgetManager::OnValueChanged(QtAttributeControllerAddon::BaseAttribute
 		Util::Guid guid = controller->GetGameEntity()->GetGuid(Attr::EntityGuid);
 		EntityTreeItem* treeItem = this->treeWidget->GetEntityTreeItem(guid);
 		treeItem->SetText(newId);
+	}
+
+	if (Attr::Graphics.GetFourCC() == attrFourCC)
+	{
+		// if the graphics have changed we have to trigger lots of refreshed (silhouette, attributes, etc)
+		// set same selection again to trigger an update
+		Util::Array<EntityGuid> ents = SelectionUtil::Instance()->GetSelectedEntityIds();
+		SelectionUtil::Instance()->SetSelection(ents);
+
+		this->ClearAttributeControllers();
+		Util::Array<Ptr<Game::Entity>> realents = SelectionUtil::Instance()->GetSelectedEntities();
+		this->ViewEntityAttributes(realents);
 	}
 }
 

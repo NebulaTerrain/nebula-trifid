@@ -102,7 +102,6 @@ MinimapManager::OnActivate()
 
     // setup vertex layout
     this->vertexLayout = this->quadVb->GetVertexLayout();
-    this->vertexLayout->SetIndexBuffer(this->quadIb);
 
     // setup the cornerPrimitiveGroup which describes one particle instance
     this->quadPrim.SetBaseVertex(0);
@@ -240,7 +239,7 @@ MinimapManager::OnBeginFrame()
             this->portraitVar->SetTexture(tex);
 
             // start batch
-            renderDev->BeginFrame();
+            renderDev->BeginFrame(InvalidIndex);
             renderDev->BeginPass(this->minimapTarget, this->minimapShader);
 
             // setup primitive
@@ -252,7 +251,7 @@ MinimapManager::OnBeginFrame()
             renderDev->DrawIndexedInstanced(numBatchEntities, 0);
 
             renderDev->EndPass();
-            renderDev->EndFrame();
+			renderDev->EndFrame(InvalidIndex);
         }
 	}
 }

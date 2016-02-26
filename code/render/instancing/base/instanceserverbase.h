@@ -11,12 +11,12 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "core/singleton.h"
-#include "instancerendererbase.h"
 #include "models/modelnodeinstance.h"
 #include "models/modelnode.h"
 
 namespace Instancing
 {
+class InstanceRenderer;
 class InstanceServerBase : public Core::RefCounted
 {
 	__DeclareSingleton(InstanceServerBase);	
@@ -34,7 +34,7 @@ public:
 	bool IsOpen() const;
 
 	/// begins adding model instances to server
-	void BeginInstancing(const Ptr<Models::ModelNode>& modelNode, const SizeT multiplier, const Ptr<CoreGraphics::Shader>& shader, const Frame::BatchGroup::Code& code);
+	void BeginInstancing(const Ptr<Models::ModelNode>& modelNode, const SizeT multiplier, const Ptr<CoreGraphics::Shader>& shader, const IndexT& pass);
 	/// adds instance to current model
 	void AddInstance(const IndexT& instanceCode, const Ptr<Models::ModelNodeInstance>& instance);
 	/// ends adding model instances
@@ -44,9 +44,9 @@ public:
 	virtual void Render(IndexT frameIndex);
 
 protected:
-    Frame::BatchGroup::Code code;
+    IndexT pass;
     Ptr<CoreGraphics::Shader> shader;
-	Ptr<InstanceRendererBase> renderer;
+	Ptr<InstanceRenderer> renderer;
 	Ptr<Models::ModelNode> modelNode;
     Util::Dictionary<IndexT, Util::Array<Ptr<Models::ModelNodeInstance>>> instancesByCode;
 	bool isBeginInstancing;

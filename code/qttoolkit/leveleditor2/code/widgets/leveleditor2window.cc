@@ -99,7 +99,7 @@ LevelEditor2Window::LevelEditor2Window():
 	connect(this->ui.actionReset_window_layout, SIGNAL(triggered()), this, SLOT(OnResetWindows()));
 	connect(this->ui.actionPerformance_overlay, SIGNAL(triggered()), this, SLOT(OnTogglePerformanceUI()));
 	connect(this->ui.actionShow_global_light_probe, SIGNAL(triggered()), this, SLOT(OnShowEnvironmentProbeSettings()));
-
+    connect(this->ui.actionPhysics_Materials, SIGNAL(triggered()), this, SLOT(OnShowPhysicsMaterials()));
 
     connect(this->gridSizeUi.GridSize, SIGNAL(valueChanged(double)),this, SLOT(OnGridSizeChanged(double)));
 
@@ -127,6 +127,7 @@ LevelEditor2Window::LevelEditor2Window():
 	connect(this->ui.actionUI_Properties, SIGNAL(triggered()), this, SLOT(OnShowUIProperties()));
 	connect(this->ui.actionCreate_template_from_selection, SIGNAL(triggered()), this, SLOT(OnCreateTemplate()));
 	connect(this->ui.actionBatch_game_data, SIGNAL(triggered()), this, SLOT(OnBatchGame()));
+	connect(this->ui.actionCenter_Group_Pivot, SIGNAL(triggered()), this, SLOT(OnCenterPivot()));
 
     this->addAction(this->ui.actionDuplicate);
     this->addAction(this->ui.actionGroup);
@@ -169,6 +170,7 @@ LevelEditor2Window::showEvent(QShowEvent* e)
 	this->restoreGeometry(settings.value("geometry").toByteArray());
 	this->restoreState(settings.value("windowState").toByteArray(), 0);
 	this->assetBrowserWindow->Open();
+    this->assetBrowserWindow->close();
 }
 
 //------------------------------------------------------------------------------
@@ -510,6 +512,25 @@ LevelEditor2Window::OnShowUIProperties()
 	this->uiDialog->SetupDialog();
 	this->uiDialog->show();
 	this->uiDialog->raise();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+LevelEditor2Window::OnShowPhysicsMaterials()
+{
+    this->materialEditor.show();
+    this->materialEditor.raise();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+LevelEditor2Window::OnCenterPivot()
+{
+	PlacementUtil::Instance()->CenterPivot();
 }
 
 //------------------------------------------------------------------------------

@@ -504,6 +504,7 @@ Level::SaveLevel()
 		this->WriteString(xmlWriter, "CastShadows", Util::String::FromBool(envEntities[i]->GetBool(Attr::CastShadows)));
 		this->WriteString(xmlWriter, "PhysicMaterial", envEntities[i]->GetString(Attr::PhysicMaterial));
 		this->WriteString(xmlWriter, "Graphics",gfx);
+		this->WriteString(xmlWriter, "StartAnimation", envEntities[i]->GetString(Attr::StartAnimation));
 		this->WriteString(xmlWriter, "LoadSynced", Util::String::FromBool(envEntities[i]->GetBool(Attr::LoadSynced)));
 		this->WriteString(xmlWriter, "CollisionEnabled",Util::String::FromBool(envEntities[i]->GetBool(Attr::CollisionEnabled)));
 		this->WriteString(xmlWriter, "DynamicObject",Util::String::FromBool(envEntities[i]->GetBool(Attr::DynamicObject)));
@@ -797,7 +798,7 @@ Level::ReadPostEffectAttribute( const Util::String& attrName, const Util::String
     else if (attrName == "SkyTexture")                  postEffectEntity->Params().sky->SetSkyTexturePath(content);
     else if (attrName == "SkyContrast")                 postEffectEntity->Params().sky->SetSkyContrast(content.AsFloat());
     else if (attrName == "SkyBrightness")               postEffectEntity->Params().sky->SetSkyBrightness(content.AsFloat());
-    else if (attrName == "SkyBrightness")               postEffectEntity->Params().sky->SetSkyBrightness(content.AsFloat());
+    else if (attrName == "SkyRotationFactor")           postEffectEntity->Params().sky->SetSkyRotationFactor(content.AsFloat());
     else if (attrName == "AOStrength")                  postEffectEntity->Params().ao->SetStrength(content.AsFloat());
     else if (attrName == "AORadius")                    postEffectEntity->Params().ao->SetRadius(content.AsFloat());
     else if (attrName == "AOPower")                     postEffectEntity->Params().ao->SetPower(content.AsFloat());

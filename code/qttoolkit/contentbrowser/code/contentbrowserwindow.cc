@@ -1224,14 +1224,18 @@ ContentBrowserWindow::OnModelSelected(const QString& mdl)
 void
 ContentBrowserWindow::OnSurfaceSelected(const QString& sur)
 {
+	bool b = true;
     if (this->materialHandler->IsSetup())
     {
-        this->materialHandler->Discard();
+		b = this->materialHandler->Discard();
     }
-    this->materialInfoWindow->show();
-    this->materialInfoWindow->raise();
-    this->materialInfoWindow->setEnabled(true);
-    this->materialHandler->Setup(sur);
+	if (b)
+	{ 
+		this->materialInfoWindow->show();
+		this->materialInfoWindow->raise();
+		this->materialInfoWindow->setEnabled(true);
+		this->materialHandler->Setup(sur);
+	}    
 }
 
 //------------------------------------------------------------------------------
@@ -2412,6 +2416,21 @@ void
 ContentBrowserWindow::OnDebugPage()
 {    
     QDesktopServices::openUrl(QUrl("http://127.0.0.1:2101"));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ContentBrowserWindow::OnFrame()
+{
+	if (this->animationHandler.isvalid() && this->animationHandler->IsSetup()) this->animationHandler->OnFrame();
+	if (this->audioHandler.isvalid() && this->audioHandler->IsSetup()) this->audioHandler->OnFrame();
+	if (this->uiHandler.isvalid() && this->uiHandler->IsSetup()) this->uiHandler->OnFrame();
+	if (this->meshHandler.isvalid() && this->meshHandler->IsSetup()) this->meshHandler->OnFrame();
+	if (this->modelHandler.isvalid() && this->modelHandler->IsSetup()) this->modelHandler->OnFrame();
+	if (this->textureHandler.isvalid() && this->textureHandler->IsSetup()) this->textureHandler->OnFrame();
+	if (this->materialHandler.isvalid() && this->materialHandler->IsSetup()) this->materialHandler->OnFrame();
 }
 
 //------------------------------------------------------------------------------

@@ -227,10 +227,15 @@ PhysicsProperty::EnablePhysics()
 			n_assert2(objs.Size() == 1, "tried to attach multiple bodies in physicsproperty");
 			object = objs[0];
 			object->GetTemplate().startTransform = this->entity->GetMatrix44(Attr::Transform);
-		}
-		
-		
+		}		        
+
 		PhysicsServer::Instance()->GetScene()->Attach(object);
+		if (this->entity->HasAttr(Attr::Mass))
+		{
+			object.cast<Physics::PhysicsBody>()->SetMass(this->entity->GetFloat(Attr::Mass));
+		}
+        Physics::MaterialType mat = Physics::MaterialTable::StringToMaterialType(this->entity->GetString(Attr::PhysicMaterial));
+        object->SetMaterialType(mat);
 
 		this->physicsEntity = object.cast<PhysicsBody>();		
 		this->physicsEntity->SetUserData(this->entity.cast<Core::RefCounted>());
@@ -360,7 +365,15 @@ PhysicsProperty::IsSimulationHost()
 	{
 		if (this->entity->HasAttr(Attr::_LevelEntity) && this->entity->GetBool(Attr::_LevelEntity))
 		{
-			return (MultiplayerFeature::NetworkServer::Instance()->IsHost());
+			// if we dont have a host we havent started a networked level yet and we just assume that we are the host for the time being
+			if (MultiplayerFeature::NetworkServer::Instance()->HasHost())
+			{
+				return (MultiplayerFeature::NetworkServer::Instance()->IsHost());
+			}
+			else
+			{
+				return true;
+			}
 		}
 		if (this->entity->HasAttr(Attr::IsMaster) && this->entity->GetBool(Attr::IsMaster))
 		{
