@@ -22,7 +22,8 @@
 #include "models/nodes/statenodeinstance.h"
 #include "n3util/n3modeldata.h"
 #include "ui_saveresourcedialog.h"
-#include "../projects/terrain-editor/code/terrainaddon/terrainaddon.h"
+//#include "../projects/terrain-editor/code/terrainaddon/terrainaddon.h"
+
 namespace Widgets
 {
 class TerrainHandler : public BaseHandler
@@ -68,8 +69,25 @@ public slots:
 	void NewSurface();
 
 private slots:
+
+	void NewTerrain();
+
+	void GenerateTerrain();
+
+	void FlattenTerrain();
+
+	void ApplyHeightMultiplier();
+
 	/// called whenever height scale slider is changed
 	void UpdateHeightMultiplier(double multiplier);
+
+	void BlurTerrain();
+
+	void UpdateBrushStrength(double strength);
+
+	void UpdateBrushSize(int size);
+
+	void UpdateBrushMaxheight(double);
 
     /// called whenever a material is selected
     void MaterialSelected(const QString& material);
@@ -140,7 +158,7 @@ private:
 	/// update thumbnail
 	void UpdateThumbnail();
 
-	Ptr<Terrain::TerrainAddon> terrainAddon;
+	//Ptr<Terrain::TerrainAddon> terrainAddon;
 
     QVBoxLayout* mainLayout;
     QComboBox* materialBox;

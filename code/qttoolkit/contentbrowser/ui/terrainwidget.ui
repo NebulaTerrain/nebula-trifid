@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>558</width>
-    <height>824</height>
+    <width>428</width>
+    <height>735</height>
    </rect>
   </property>
   <property name="font">
@@ -53,8 +53,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>516</width>
-           <height>234</height>
+           <width>386</width>
+           <height>189</height>
           </rect>
          </property>
          <property name="sizePolicy">
@@ -75,21 +75,11 @@
     </widget>
    </item>
    <item row="1" column="0">
-    <widget class="QGroupBox" name="gridGroupBox">
+    <widget class="QGroupBox" name="terrainSettings_gridGroupBox">
      <property name="title">
       <string>Terrain Settings</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_3">
-      <item row="3" column="2">
-       <widget class="QPushButton" name="generate_pushButton">
-        <property name="text">
-         <string>Generate</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="1">
-       <widget class="QComboBox" name="scomboBox"/>
-      </item>
       <item row="1" column="0">
        <widget class="QLabel" name="heightMap_label">
         <property name="text">
@@ -111,39 +101,114 @@
         </property>
        </widget>
       </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="2" column="0">
-    <widget class="QGroupBox" name="toolSettings_gridGroupBox">
-     <property name="title">
-      <string>Tool Settings</string>
-     </property>
-     <layout class="QGridLayout" name="gridLayout_4">
+      <item row="5" column="1">
+       <widget class="QSlider" name="heightScale_horizontalSlider">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0">
+       <widget class="QLabel" name="fullBlurStrength_label">
+        <property name="text">
+         <string>Full Blur Strength</string>
+        </property>
+       </widget>
+      </item>
       <item row="5" column="3">
-       <widget class="QSpinBox" name="blurStrength_spinBox"/>
-      </item>
-      <item row="5" column="4">
-       <widget class="QPushButton" name="pushButton_4">
-        <property name="text">
-         <string>Blur</string>
+       <widget class="QDoubleSpinBox" name="heightScale_doubleSpinBox">
+        <property name="value">
+         <double>1.000000000000000</double>
         </property>
        </widget>
       </item>
-      <item row="4" column="5">
-       <widget class="QPushButton" name="pushButton_5">
-        <property name="text">
-         <string>Apply</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="0">
+      <item row="5" column="0">
        <widget class="QLabel" name="heightScale_label">
         <property name="text">
          <string>Height Scale</string>
         </property>
        </widget>
       </item>
+      <item row="3" column="3">
+       <widget class="QSpinBox" name="heightMapSize_spinBox">
+        <property name="minimum">
+         <number>2</number>
+        </property>
+        <property name="singleStep">
+         <number>2</number>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QSlider" name="heightMapSize_horizontalSlider">
+        <property name="minimum">
+         <number>2</number>
+        </property>
+        <property name="maximum">
+         <number>4096</number>
+        </property>
+        <property name="singleStep">
+         <number>2</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="1">
+       <widget class="QSlider" name="fullBlurStrength_horizontalSlider">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="6">
+       <widget class="QPushButton" name="applyScale_pushButton">
+        <property name="text">
+         <string>Apply</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="5">
+       <widget class="QPushButton" name="flattenHeightMap_pushButton">
+        <property name="text">
+         <string>Flatten</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="5">
+       <widget class="QPushButton" name="fullBlurHeightMap_pushButton">
+        <property name="text">
+         <string>Blur</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="3">
+       <widget class="QSpinBox" name="fullBlurStrength_spinBox"/>
+      </item>
+      <item row="3" column="6">
+       <widget class="QPushButton" name="generate_pushButton">
+        <property name="text">
+         <string>Generate</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="5">
+       <widget class="QPushButton" name="new_pushButton">
+        <property name="text">
+         <string>New</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QGroupBox" name="brushSettings_gridGroupBox">
+     <property name="title">
+      <string>Brush Settings</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_4">
       <item row="2" column="0">
        <widget class="QLabel" name="size_label">
         <property name="text">
@@ -162,16 +227,6 @@
        <widget class="QLabel" name="maxHeight_label">
         <property name="text">
          <string>Max Height</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="3">
-       <widget class="QDoubleSpinBox" name="heightScale_doubleSpinBox"/>
-      </item>
-      <item row="4" column="4">
-       <widget class="QPushButton" name="pushButton_6">
-        <property name="text">
-         <string>Clear</string>
         </property>
        </widget>
       </item>
@@ -205,13 +260,6 @@
         </property>
        </widget>
       </item>
-      <item row="4" column="1">
-       <widget class="QSlider" name="heightScale_horizontalSlider">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
-      </item>
      </layout>
     </widget>
    </item>
@@ -237,8 +285,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>516</width>
-           <height>234</height>
+           <width>386</width>
+           <height>190</height>
           </rect>
          </property>
         </widget>
