@@ -22,6 +22,7 @@
 #include "models/nodes/statenodeinstance.h"
 #include "n3util/n3modeldata.h"
 #include "ui_saveresourcedialog.h"
+#include "../projects/terrain-editor/code/terrainaddon/terrainaddon.h"
 namespace Widgets
 {
 class TerrainHandler : public BaseHandler
@@ -67,6 +68,9 @@ public slots:
 	void NewSurface();
 
 private slots:
+	/// called whenever height scale slider is changed
+	void UpdateHeightMultiplier(double multiplier);
+
     /// called whenever a material is selected
     void MaterialSelected(const QString& material);
     /// called whenever the material info button is clicked
@@ -100,12 +104,6 @@ private slots:
 
     /// called whenever the browse button is pressed
     void Browse();
-    /// called whenever a color picker is clicked
-    void ChangeColor();
-	/// called whenever the color picker is changed
-	void ColorPickerChanged(const QColor& color);
-	/// called whenever the color picker is changed
-	void ColorPickerClosed(int result);
 
 	/// called whenever the save button is clicked
 	void Save();
@@ -141,6 +139,8 @@ private:
 
 	/// update thumbnail
 	void UpdateThumbnail();
+
+	Ptr<Terrain::TerrainAddon> terrainAddon;
 
     QVBoxLayout* mainLayout;
     QComboBox* materialBox;
@@ -207,15 +207,15 @@ inline void
 TerrainHandler::SetUI(Ui::TerrainWidget* ui)
 {
     this->ui = ui;
-    this->ui->templateBox->setEnabled(false);
-    this->ui->saveButton->setEnabled(false);
-    this->ui->saveAsButton->setEnabled(false);
+    //this->ui->templateBox->setEnabled(false);
+    //this->ui->saveButton->setEnabled(false);
+    //this->ui->saveAsButton->setEnabled(false);
 
 	// hmm, this shouldn't really be done each time we open a surface...
-	connect(this->ui->saveButton, SIGNAL(clicked()), this, SLOT(Save()));
-	connect(this->ui->saveAsButton, SIGNAL(clicked()), this, SLOT(SaveAs()));
-	connect(this->ui->templateBox, SIGNAL(activated(const QString&)), this, SLOT(MaterialSelected(const QString&)));
-	connect(this->ui->materialHelp, SIGNAL(clicked()), this, SLOT(MaterialInfo()));
+	//connect(this->ui->saveButton, SIGNAL(clicked()), this, SLOT(Save()));
+	//connect(this->ui->saveAsButton, SIGNAL(clicked()), this, SLOT(SaveAs()));
+	//connect(this->ui->templateBox, SIGNAL(activated(const QString&)), this, SLOT(MaterialSelected(const QString&)));
+	//connect(this->ui->materialHelp, SIGNAL(clicked()), this, SLOT(MaterialInfo()));
 }
 
 //------------------------------------------------------------------------------

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>444</width>
-    <height>563</height>
+    <width>558</width>
+    <height>824</height>
    </rect>
   </property>
   <property name="font">
@@ -25,173 +25,227 @@
    <enum>QFrame::Plain</enum>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="4" column="0" colspan="2">
-    <widget class="QScrollArea" name="scrollArea">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
+   <item row="4" column="0">
+    <widget class="QGroupBox" name="channels_gridGroupBox">
+     <property name="title">
+      <string>Channels</string>
      </property>
-     <property name="frameShadow">
-      <enum>QFrame::Plain</enum>
-     </property>
-     <property name="widgetResizable">
-      <bool>true</bool>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-     </property>
-     <widget class="QWidget" name="variableFrame">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>0</y>
-        <width>422</width>
-        <height>448</height>
-       </rect>
-      </property>
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <layout class="QVBoxLayout" name="verticalLayout">
-       <property name="spacing">
-        <number>1</number>
-       </property>
-      </layout>
-     </widget>
+     <layout class="QGridLayout" name="gridLayout_5">
+      <item row="0" column="0">
+       <widget class="QScrollArea" name="channels_scrollArea">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Plain</enum>
+        </property>
+        <property name="widgetResizable">
+         <bool>true</bool>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+        </property>
+        <widget class="QWidget" name="variableFrame">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>516</width>
+           <height>234</height>
+          </rect>
+         </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout">
+          <property name="spacing">
+           <number>1</number>
+          </property>
+         </layout>
+        </widget>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </item>
-   <item row="0" column="0" colspan="2">
-    <layout class="QGridLayout" name="gridLayout_2">
-     <property name="verticalSpacing">
-      <number>6</number>
+   <item row="1" column="0">
+    <widget class="QGroupBox" name="gridGroupBox">
+     <property name="title">
+      <string>Terrain Settings</string>
      </property>
-     <item row="1" column="4" rowspan="3">
-      <widget class="QLabel" name="surfaceThumbnail">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>67</width>
-         <height>67</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">border: 2px solid gray;
-border-radius: 5px;</string>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="0" colspan="2">
-      <widget class="QLabel" name="surfaceLabel">
-       <property name="font">
-        <font>
-         <family>Segoe UI</family>
-         <pointsize>11</pointsize>
-        </font>
-       </property>
-       <property name="layoutDirection">
-        <enum>Qt::LeftToRight</enum>
-       </property>
-       <property name="text">
-        <string>Surface</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1" colspan="2">
-      <widget class="QComboBox" name="templateBox">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="0">
-      <widget class="QLabel" name="label_2">
-       <property name="font">
-        <font>
-         <pointsize>10</pointsize>
-        </font>
-       </property>
-       <property name="text">
-        <string>Shader type:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="2" colspan="2">
-      <widget class="QLabel" name="surfaceName">
-       <property name="font">
-        <font>
-         <pointsize>14</pointsize>
-         <weight>75</weight>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="text">
-        <string>ha ha ha</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="3">
-      <widget class="QPushButton" name="materialHelp">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>25</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>?</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0" colspan="4">
-      <layout class="QHBoxLayout" name="horizontalLayout_2">
-       <item>
-        <widget class="QPushButton" name="saveButton">
-         <property name="toolTip">
-          <string>Save the surface.</string>
-         </property>
-         <property name="text">
-          <string>Save surface</string>
+     <layout class="QGridLayout" name="gridLayout_3">
+      <item row="3" column="2">
+       <widget class="QPushButton" name="generate_pushButton">
+        <property name="text">
+         <string>Generate</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QComboBox" name="scomboBox"/>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="heightMap_label">
+        <property name="text">
+         <string>Height Map</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="heightMapSize_label">
+        <property name="text">
+         <string>Size</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QPushButton" name="browse_pushButton">
+        <property name="text">
+         <string>Browse</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QGroupBox" name="toolSettings_gridGroupBox">
+     <property name="title">
+      <string>Tool Settings</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_4">
+      <item row="5" column="3">
+       <widget class="QSpinBox" name="blurStrength_spinBox"/>
+      </item>
+      <item row="5" column="4">
+       <widget class="QPushButton" name="pushButton_4">
+        <property name="text">
+         <string>Blur</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="5">
+       <widget class="QPushButton" name="pushButton_5">
+        <property name="text">
+         <string>Apply</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="heightScale_label">
+        <property name="text">
+         <string>Height Scale</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="size_label">
+        <property name="text">
+         <string>Size</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="strength_label">
+        <property name="text">
+         <string>Strength</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="maxHeight_label">
+        <property name="text">
+         <string>Max Height</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="3">
+       <widget class="QDoubleSpinBox" name="heightScale_doubleSpinBox"/>
+      </item>
+      <item row="4" column="4">
+       <widget class="QPushButton" name="pushButton_6">
+        <property name="text">
+         <string>Clear</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="3">
+       <widget class="QDoubleSpinBox" name="maxHeight_doubleSpinBox"/>
+      </item>
+      <item row="2" column="3">
+       <widget class="QSpinBox" name="size_spinBox"/>
+      </item>
+      <item row="1" column="3">
+       <widget class="QDoubleSpinBox" name="strength_doubleSpinBox"/>
+      </item>
+      <item row="1" column="1">
+       <widget class="QSlider" name="strength_horizontalSlider">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QSlider" name="size_horizontalSlider">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QSlider" name="maxHeight_horizontalSlider">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QSlider" name="heightScale_horizontalSlider">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="3" column="0">
+    <widget class="QGroupBox" name="brushTextures_gridGroupBox">
+     <property name="title">
+      <string>Brush Textures</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_6">
+      <item row="0" column="0">
+       <widget class="QScrollArea" name="brushTextures_scrollArea">
+        <property name="frameShadow">
+         <enum>QFrame::Plain</enum>
+        </property>
+        <property name="widgetResizable">
+         <bool>true</bool>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+        </property>
+        <widget class="QWidget" name="scrollAreaWidgetContents">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>516</width>
+           <height>234</height>
+          </rect>
          </property>
         </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="saveAsButton">
-         <property name="text">
-          <string>Save surface as...</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-    </layout>
+       </widget>
+      </item>
+     </layout>
+    </widget>
    </item>
   </layout>
  </widget>

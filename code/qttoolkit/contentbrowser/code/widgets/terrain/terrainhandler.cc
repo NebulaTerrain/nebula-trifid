@@ -47,7 +47,12 @@ TerrainHandler::TerrainHandler() :
 
 	// connect button slot
 	connect(this->saveDialogUi.newCategory, SIGNAL(pressed()), this, SLOT(OnNewCategory()));
+	connect(this->ui->heightScale_horizontalSlider, SIGNAL(valueChanged(double)), this, SLOT(UpdateHeightMultiplier(double)));
 	this->SetupSaveDialog();
+
+	// setup terrain
+	this->terrainAddon = Terrain::TerrainAddon::Create();
+	//this->terrainAddon->Setup(stage);
 }
 
 //------------------------------------------------------------------------------
@@ -55,10 +60,12 @@ TerrainHandler::TerrainHandler() :
 */
 TerrainHandler::~TerrainHandler()
 {
+	/*
 	disconnect(this->ui->saveButton, SIGNAL(clicked()), this, SLOT(Save()));
 	disconnect(this->ui->saveAsButton, SIGNAL(clicked()), this, SLOT(SaveAs()));
 	disconnect(this->ui->templateBox, SIGNAL(activated(const QString&)), this, SLOT(MaterialSelected(const QString&)));
 	disconnect(this->ui->materialHelp, SIGNAL(clicked()), this, SLOT(MaterialInfo()));
+	*/
 }
 
 //------------------------------------------------------------------------------
@@ -95,7 +102,7 @@ TerrainHandler::Setup(const QString& resource)
 	this->category = res.ExtractDirName();
 	this->category.SubstituteString("/", "");
 	this->file = res.ExtractFileName();
-	this->ui->surfaceName->setText(String::Sprintf("%s/%s", this->category.AsCharPtr(), this->file.AsCharPtr()).AsCharPtr());
+	//this->ui->surfaceName->setText(String::Sprintf("%s/%s", this->category.AsCharPtr(), this->file.AsCharPtr()).AsCharPtr());
 
     // create resource
 	this->managedSurface = Resources::ResourceManager::Instance()->CreateManagedResource(Surface::RTTI, resource.toUtf8().constData(), NULL, true).downcast<Materials::ManagedSurface>();
@@ -115,14 +122,14 @@ TerrainHandler::Setup(const QString& resource)
 	if (this->category != "system")
 	{
 		// enable the elements which are only viable if we are working on a surface
-		this->ui->templateBox->setEnabled(true);
-		this->ui->saveButton->setEnabled(true);
-		this->ui->saveAsButton->setEnabled(true);
+		//this->ui->templateBox->setEnabled(true);
+		//this->ui->saveButton->setEnabled(true);
+		//this->ui->saveAsButton->setEnabled(true);
 
 		// setup UI
-		this->MakeMaterialUI(this->ui->templateBox, this->ui->materialHelp);
-		this->ui->saveButton->setStyleSheet("background-color: rgb(4, 200, 0); color: white");
-		this->hasChanges = false;
+		//this->MakeMaterialUI(this->ui->templateBox, this->ui->materialHelp);
+		//this->ui->saveButton->setStyleSheet("background-color: rgb(4, 200, 0); color: white");
+		//this->hasChanges = false;
 	}
 }
 
@@ -188,6 +195,10 @@ TerrainHandler::Discard()
 	
 	// clear our frame
 	this->ClearFrame(this->mainLayout);
+
+	// close terrain
+	this->terrainAddon->Discard();
+	this->terrainAddon = 0;
 
 	return BaseHandler::Discard();
 }
@@ -298,6 +309,7 @@ TerrainHandler::TextureChanged(uint i)
 void
 TerrainHandler::NewSurface()
 {
+	/*
 	if (!this->isSetup || this->Discard())
 	{
 		BaseHandler::Setup();
@@ -329,6 +341,7 @@ TerrainHandler::NewSurface()
 		this->OnModified();
 		this->ResetUI();
 	}
+	*/
 }
 
 //------------------------------------------------------------------------------
@@ -654,127 +667,6 @@ TerrainHandler::Browse()
 /**
 */
 void
-TerrainHandler::ChangeColor()
-{
-    // get sender
-    QObject* sender = this->sender();
-
-    // must be a button
-    QPushButton* button = static_cast<QPushButton*>(sender);
-
-    // get index 
-    int i = this->variableVectorColorEditMap[button];
-
-    // get spin boxes for value
-    QList<QDoubleSpinBox*> vector = this->variableVectorMap[i];
-
-    // convert to qcolor
-    float4 values(vector[0]->value(), vector[1]->value(), vector[2]->value(), vector[3]->value());
-    values = float4::clamp(values, float4(0), float4(1));
-    QColor qcolor(values.x() * 255, values.y() * 255, values.z() * 255, values.w() * 255);
-
-	vector[0]->blockSignals(true);
-	vector[1]->blockSignals(true);
-	vector[2]->blockSignals(true);
-	vector[3]->blockSignals(true);
-
-	if (this->colorDialog != NULL) this->colorDialog->reject();
-	currentColor = values;
-	this->colorDialog = new QColorDialog(qcolor);
-	this->colorDialog->setUserData(0, (QObjectUserData*)sender);
-	this->colorDialog->setWindowFlags(Qt::WindowStaysOnTopHint);
-	this->colorDialog->setOption(QColorDialog::ShowAlphaChannel);
-	connect(this->colorDialog, SIGNAL(currentColorChanged(const QColor&)), this, SLOT(ColorPickerChanged(const QColor&)));
-	connect(this->colorDialog, SIGNAL(finished(int)), this, SLOT(ColorPickerClosed(int)));
-	this->colorDialog->open();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-TerrainHandler::ColorPickerChanged(const QColor& currentColor)
-{
-	// get sender
-	QObject* sender = (QObject*)static_cast<QColorDialog*>(this->sender())->userData(0);
-
-	// must be a button
-	QPushButton* button = static_cast<QPushButton*>(sender);
-
-	// get index 
-	int i = this->variableVectorColorEditMap[button];
-
-	// get spin boxes for value
-	QList<QDoubleSpinBox*> vector = this->variableVectorMap[i];
-
-	// convert to qcolor
-	float4 values(vector[0]->value(), vector[1]->value(), vector[2]->value(), vector[3]->value());
-	values = float4::clamp(values, float4(0), float4(1));
-	QColor qcolor(values.x() * 255, values.y() * 255, values.z() * 255, values.w() * 255);
-
-	QColor diaColor = currentColor;
-	float4 color;
-	color.x() = diaColor.red() / 255.0f;
-	color.y() = diaColor.green() / 255.0f;
-	color.z() = diaColor.blue() / 255.0f;
-	color.w() = diaColor.alpha() / 255.0f;
-
-	vector[0]->setValue(color.x());
-	vector[1]->setValue(color.y());
-	vector[2]->setValue(color.z());
-	vector[3]->setValue(color.w());
-
-	// update button
-	diaColor.setAlpha(255);
-	button->setPalette(QPalette(diaColor));
-
-	this->Float4VariableChanged(i);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-TerrainHandler::ColorPickerClosed(int result)
-{
-	// get sender
-	QObject* sender = (QObject*)static_cast<QColorDialog*>(this->sender())->userData(0);
-
-	// must be a button
-	QPushButton* button = static_cast<QPushButton*>(sender);
-
-	// get index 
-	int i = this->variableVectorColorEditMap[button];
-
-	// get spin boxes for value
-	QList<QDoubleSpinBox*> vector = this->variableVectorMap[i];
-
-	// convert to qcolor
-	float4 values = currentColor;
-	values = float4::clamp(values, float4(0), float4(1));
-	QColor qcolor(values.x() * 255, values.y() * 255, values.z() * 255, values.w() * 255);
-
-	if (result == QDialog::Rejected)
-	{
-		QColor diaColor = qcolor;
-		vector[0]->setValue(values.x());
-		vector[1]->setValue(values.y());
-		vector[2]->setValue(values.z());
-		vector[3]->setValue(values.w());
-
-		// update button
-		diaColor.setAlpha(255);
-		button->setPalette(QPalette(diaColor));
-
-		this->Float4VariableChanged(i);
-	}
-	this->colorDialog = 0;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 TerrainHandler::Save()
 {
 	if (this->category.IsEmpty() || this->file.IsEmpty())
@@ -806,7 +698,7 @@ TerrainHandler::Save()
 	}
 	this->surface->SetSaver(0);
 	QString label;
-	this->ui->surfaceName->setText(label.sprintf("%s/%s", this->category.AsCharPtr(), this->file.AsCharPtr()));
+	//this->ui->surfaceName->setText(label.sprintf("%s/%s", this->category.AsCharPtr(), this->file.AsCharPtr()));
 
 	// format the target where the resource will be exported to
 	String exportTarget = String::Sprintf("sur:%s/%s.sur", this->category.AsCharPtr(), this->file.AsCharPtr());
@@ -848,7 +740,7 @@ TerrainHandler::Save()
 	QtRemoteInterfaceAddon::QtRemoteClient::GetClient("editor")->Send(msg.upcast<Messaging::Message>());
 
 	// mark save button and flip changed bool
-	this->ui->saveButton->setStyleSheet("background-color: rgb(4, 200, 0); color: white");
+	//this->ui->saveButton->setStyleSheet("background-color: rgb(4, 200, 0); color: white");
 	this->hasChanges = false;
 
 	// update thumbnail
@@ -887,7 +779,7 @@ TerrainHandler::SaveAs()
 
 		// reformat label
 		QString label;
-		this->ui->surfaceName->setText(label.sprintf("%s/%s", this->category.AsCharPtr(), this->file.AsCharPtr()));
+		//this->ui->surfaceName->setText(label.sprintf("%s/%s", this->category.AsCharPtr(), this->file.AsCharPtr()));
 
 		// format the target where the resource will be exported to
 		String exportTarget = String::Sprintf("sur:%s/%s.sur", this->category.AsCharPtr(), this->file.AsCharPtr());
@@ -929,7 +821,7 @@ TerrainHandler::SaveAs()
 		resName = String::Sprintf("src:assets/%s/%s_sur.thumb", this->category.AsCharPtr(), this->file.AsCharPtr());
 
 		// mark save button and flip changed bool
-		this->ui->saveButton->setStyleSheet("background-color: rgb(4, 200, 0); color: white");
+		//this->ui->saveButton->setStyleSheet("background-color: rgb(4, 200, 0); color: white");
 		this->hasChanges = false;
 
 		// update thumbnail
@@ -1702,8 +1594,8 @@ TerrainHandler::GetVariables(const Ptr<Materials::Material>& mat)
 void
 TerrainHandler::ClearFrame(QLayout* layout)
 {
-	disconnect(this->ui->templateBox, SIGNAL(activated(const QString&)), this, SLOT(MaterialSelected(const QString&)));
-	disconnect(this->ui->materialHelp, SIGNAL(clicked()), this, SLOT(MaterialInfo()));
+	//disconnect(this->ui->templateBox, SIGNAL(activated(const QString&)), this, SLOT(MaterialSelected(const QString&)));
+	//disconnect(this->ui->materialHelp, SIGNAL(clicked()), this, SLOT(MaterialInfo()));
 
     if (layout)
     {
@@ -1776,7 +1668,7 @@ TerrainHandler::ResetUI()
 	this->mainLayout = static_cast<QVBoxLayout*>(this->ui->variableFrame->layout());
 
 	this->ClearFrame(this->mainLayout);
-	this->MakeMaterialUI(this->ui->templateBox, this->ui->materialHelp);
+	//this->MakeMaterialUI(this->ui->templateBox, this->ui->materialHelp);
 }
 
 //------------------------------------------------------------------------------
@@ -1786,7 +1678,7 @@ void
 TerrainHandler::OnModified()
 {
 	// mark save button
-	this->ui->saveButton->setStyleSheet("background-color: rgb(200, 4, 0); color: white");
+	//this->ui->saveButton->setStyleSheet("background-color: rgb(200, 4, 0); color: white");
 	this->hasChanges = true;
 }
 
@@ -1802,7 +1694,12 @@ TerrainHandler::UpdateThumbnail()
 	IO::URI texFile = thumbnail;
 	pixmap.load(texFile.LocalPath().AsCharPtr());
 	pixmap = pixmap.scaled(QSize(67, 67), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-	this->ui->surfaceThumbnail->setPixmap(pixmap);
+	//this->ui->surfaceThumbnail->setPixmap(pixmap);
+}
+
+void TerrainHandler::UpdateHeightMultiplier(double multiplier)
+{
+	terrainAddon->UpdateHeightMultiplier(multiplier);
 }
 
 } // namespace Widgets
