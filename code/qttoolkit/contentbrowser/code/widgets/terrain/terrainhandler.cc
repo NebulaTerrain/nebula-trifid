@@ -24,6 +24,8 @@
 #include <QBitmap>
 #include <QMessageBox>
 #include <QInputDialog>
+#include "resources/resourceid.h"
+#include "models/model.h"
 
 using namespace ToolkitUtil;
 using namespace Graphics;
@@ -47,40 +49,8 @@ TerrainHandler::TerrainHandler() :
 
 	// connect button slot
 	connect(this->saveDialogUi.newCategory, SIGNAL(pressed()), this, SLOT(OnNewCategory()));
-	
-	connect(this->ui->heightMapSize_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(ui->heightMapSize_spinBox->setValue(int))); //visual
-	connect(this->ui->heightMapSize_spinBox, SIGNAL(valueChanged(int)), this, SLOT(ui->heightMapSize_horizontalSlider->setValue(int))); //visual
-	connect(this->ui->new_pushButton, SIGNAL(clicked()), this, SLOT(NewTerrain()));
-	connect(this->ui->generate_pushButton, SIGNAL(clicked()), this, SLOT(GenerateTerrain()));
-	
-	//connect(this->ui->heightScale_horizontalSlider, SIGNAL(valueChanged(double)), this, SLOT(ui->heightScale_doubleSpinBox->setValue(double))); //visual
-	//connect(this->ui->heightScale_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(ui->heightScale_horizontalSlider->setValue(double))); //visual
-	connect(this->ui->heightScale_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateHeightMultiplier(double))); 
-	connect(this->ui->flattenHeightMap_pushButton, SIGNAL(clicked()), this, SLOT(FlattenTerrain()));
-	connect(this->ui->applyScale_pushButton, SIGNAL(clicked()), this, SLOT(ApplyHeightMultiplier()));
-
-	connect(this->ui->fullBlurStrength_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(ui->fullBlurStrength_spinBox->setValue(int))); //visual
-	connect(this->ui->fullBlurStrength_spinBox, SIGNAL(valueChanged(int)), this, SLOT(ui->fullBlurStrength_horizontalSlider->setValue(int))); //visual
-	connect(this->ui->fullBlurHeightMap_pushButton, SIGNAL(clicked()), this, SLOT(BlurTerrain()));
-
-	//connect(this->ui->strength_horizontalSlider, SIGNAL(valueChanged(double)), this, SLOT(ui->strength_doubleSpinBox->setValue(double))); //visual
-	//connect(this->ui->strength_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(ui->strength_horizontalSlider->setValue(double))); //visual
-	connect(this->ui->strength_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateBrushStrength(double))); 
-
-	connect(this->ui->size_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(ui->size_spinBox->setValue(int))); //visual
-	connect(this->ui->size_spinBox, SIGNAL(valueChanged(int)), this, SLOT(ui->size_horizontalSlider->setValue(int))); //visual
-	connect(this->ui->size_spinBox, SIGNAL(valueChanged(int)), this, SLOT(UpdateBrushSize(int)));
-	
-	//connect(this->ui->maxHeight_horizontalSlider, SIGNAL(valueChanged(double)), this, SLOT(ui->maxHeight_doubleSpinBox->setValue(double))); //visual
-	//connect(this->ui->maxHeight_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(ui->maxHeight_horizontalSlider->setValue(double))); //visual
-	connect(this->ui->maxHeight_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateBrushMaxheight(double)));
-	
 
 	this->SetupSaveDialog();
-
-	// setup terrain
-	//this->terrainAddon = Terrain::TerrainAddon::Create();
-	//this->terrainAddon->Setup(stage);
 }
 
 //------------------------------------------------------------------------------
@@ -1727,7 +1697,13 @@ TerrainHandler::UpdateThumbnail()
 
 void TerrainHandler::NewTerrain()
 {
+	//this->terrainAddon->Setup();
 
+	Ptr<PreviewState> previewState = ContentBrowserApp::Instance()->GetPreviewState();
+	previewState->SetModel(Resources::ResourceId("mdl:system/terrainPlane.n3"));
+
+	Ptr<Resources::ManagedMesh> mesh = Resources::ResourceManager::Instance()->CreateManagedResource(CoreGraphics::Mesh::RTTI, Resources::ResourceId("msh:system/terrainPlane.nvx2"), 0, true).downcast<Resources::ManagedMesh>();
+	//this->terrainAddon->
 }
 
 void TerrainHandler::GenerateTerrain()

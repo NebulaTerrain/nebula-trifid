@@ -191,6 +191,7 @@ ADD_DEPENDENCIES(contentbrowser
 	globalprobecontroller
 	editorfeatures
 	video
+	terrainaddon
 )
 
 TARGET_LINK_LIBRARIES(contentbrowser 	
@@ -211,6 +212,7 @@ TARGET_LINK_LIBRARIES(contentbrowser
 	video
 	nody
 	shady
+	terrainaddon
 	${QT_WIN_LIBS}	
 	${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY}	
 )
