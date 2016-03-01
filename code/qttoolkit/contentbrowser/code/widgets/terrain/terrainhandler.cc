@@ -1702,7 +1702,7 @@ void TerrainHandler::NewTerrain()
 	Ptr<PreviewState> previewState = ContentBrowserApp::Instance()->GetPreviewState();
 	previewState->SetModel(Resources::ResourceId("mdl:system/terrainPlane.n3"));
 
-	this->terrainAddon->Setup(false);
+	this->terrainAddon->Setup(ContentBrowserApp::Instance()->GetPreviewState()->GetModel());
 	//this->SetSurface(this->placeholderSurface->GetSurface()->CreateInstance());
 }
 

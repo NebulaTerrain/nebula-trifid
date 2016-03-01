@@ -26,7 +26,8 @@ namespace Terrain
 		virtual ~TerrainAddon();
 
 		/// setup
-		void Setup(bool createAndAttachTerrainEntity);
+		void Setup(Ptr<Graphics::ModelEntity> modelEntity);
+
 		/// discard
 		void Discard();
 
@@ -38,9 +39,8 @@ namespace Terrain
 
 		void InitializeTexture();
 		void UpdateTexture(void* data, SizeT size, SizeT width, SizeT height, IndexT left, IndexT top, IndexT mip);
-		void CreateTerrainEntity();
-		void SetUpTerrainModel();
-		void AttachTerrainEntity();
+		void SetUpTerrainModel(Ptr<Graphics::ModelEntity> modelEntity);
+		Ptr<Graphics::ModelEntity> AttachTerrainEntity();
 		Ptr<Graphics::ModelEntity> GetTerrainEntity();
 		Ptr<CoreGraphics::Mesh> GetTerrainMesh();
 
@@ -63,6 +63,7 @@ namespace Terrain
 			{}
 		};
 		#pragma pack (pop) 
+
 		Ptr<Graphics::Stage> stage;
 
 		int width, height;
@@ -96,6 +97,5 @@ namespace Terrain
 		Ptr<Terrain::BrushTool> brushTool;
 		Ptr<Models::ModelInstance> terrainModelInstance;
 
-		Ptr<Models::ManagedModel> managedModel;
 	};
 } // namespace Grid

@@ -37,19 +37,18 @@ namespace Terrain
 	}
 
 	void
-		TerrainAddon::Setup(bool createAndAttachTerrainEntity)
+		TerrainAddon::Setup(Ptr<Graphics::ModelEntity> modelEntity)
 	{
 		width = 1024;
 		height = 1024;
 		heightMapHeight = height + 1;
 		heightMapWidth = width + 1;
 		heightMultiplier = 1.f;
-		this->stage = GraphicsServer::Instance()->GetDefaultView()->GetStage();
+		stage = GraphicsServer::Instance()->GetDefaultView()->GetStage();
 		brushTool = Terrain::BrushTool::Create();
 		brushTool->Setup();
-
-		if (createAndAttachTerrainEntity) CreateTerrainEntity();
-		else SetUpTerrainModel();
+		
+		SetUpTerrainModel(modelEntity);
 
 		InitializeTexture();
 		
@@ -66,16 +65,6 @@ namespace Terrain
 	void
 		TerrainAddon::Discard()
 	{
-		if (this->terrainModelEnt != nullptr)
-		{
-			stage->RemoveEntity(this->terrainModelEnt.cast<GraphicsEntity>());
-			this->terrainModelEnt = 0;
-		}
-		else
-		{
-			terrainModel->DiscardInstance(terrainModelInstance);
-			Resources::ResourceManager::Instance()->DiscardManagedResource(managedModel.upcast<Resources::ManagedResource>());
-		}
 		this->ibo = 0;
 		this->vbo = 0;
 
@@ -108,29 +97,21 @@ namespace Terrain
 		Resources::ResourceManager::Instance()->RegisterUnmanagedResource(this->memoryHeightTexture.upcast<Resources::Resource>());
 	}
 
-	void TerrainAddon::CreateTerrainEntity()
+
+	Ptr<Graphics::ModelEntity> TerrainAddon::AttachTerrainEntity()
 	{
 		this->terrainModelEnt = ModelEntity::Create();
 		this->terrainModelEnt->SetResourceId(ResourceId("mdl:system/terrainPlane.n3"));
 		this->terrainModelEnt->SetLoadSynced(true);
 		stage->AttachEntity(terrainModelEnt.cast<GraphicsEntity>());
-
-		terrainModel = terrainModelEnt->GetModelInstance()->GetModel();
-
-		terrainShapeNodeInstance = RenderUtil::NodeLookupUtil::LookupStateNodeInstance(terrainModelEnt, "root/pCube1").cast<Models::ShapeNodeInstance>();
-		terrainShapeNode = terrainShapeNodeInstance->GetModelNode().cast<Models::ShapeNode>();
-		surfaceInstance = terrainShapeNodeInstance->GetSurfaceInstance();
-		Ptr<Resources::ManagedMesh> terrainManagedMesh = terrainShapeNode->GetManagedMesh();
-		terrainMesh = terrainManagedMesh->GetMesh();
+		return terrainModelEnt;
 	}
 
-	void TerrainAddon::SetUpTerrainModel()
+	void TerrainAddon::SetUpTerrainModel(Ptr<Graphics::ModelEntity> modelEntity)
 	{
-		managedModel = Resources::ResourceManager::Instance()->CreateManagedResource(Models::Model::RTTI, Resources::ResourceId("mdl:system/terrainPlane.n3"), 0, true).downcast<Models::ManagedModel>();
-		this->terrainModel = managedModel->GetModel();
-		this->terrainModelInstance = terrainModel->CreateInstance();
-
-		this->terrainShapeNodeInstance = terrainModelInstance->LookupNodeInstance("root/pCube1").cast<Models::ShapeNodeInstance>();
+		this->terrainModelEnt = modelEntity;
+		this->terrainModel = terrainModelEnt->GetModelInstance()->GetModel();
+		this->terrainShapeNodeInstance = RenderUtil::NodeLookupUtil::LookupStateNodeInstance(terrainModelEnt, "root/pCube1").cast<Models::ShapeNodeInstance>();
 		this->surfaceInstance = terrainShapeNodeInstance->GetSurfaceInstance();
 
 		this->terrainShapeNode = terrainShapeNodeInstance->GetModelNode().cast<Models::ShapeNode>();
