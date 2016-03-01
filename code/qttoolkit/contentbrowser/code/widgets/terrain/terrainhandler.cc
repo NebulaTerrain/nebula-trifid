@@ -195,8 +195,8 @@ TerrainHandler::Discard()
 	this->ClearFrame(this->mainLayout);
 
 	// close terrain
-	//this->terrainAddon->Discard();
-	//this->terrainAddon = 0;
+	this->terrainAddon->Discard();
+	this->terrainAddon = 0;
 
 	return BaseHandler::Discard();
 }
@@ -1698,12 +1698,12 @@ TerrainHandler::UpdateThumbnail()
 void TerrainHandler::NewTerrain()
 {
 	//this->terrainAddon->Setup();
-
+	BaseHandler::Setup();
 	Ptr<PreviewState> previewState = ContentBrowserApp::Instance()->GetPreviewState();
 	previewState->SetModel(Resources::ResourceId("mdl:system/terrainPlane.n3"));
 
-	Ptr<Resources::ManagedMesh> mesh = Resources::ResourceManager::Instance()->CreateManagedResource(CoreGraphics::Mesh::RTTI, Resources::ResourceId("msh:system/terrainPlane.nvx2"), 0, true).downcast<Resources::ManagedMesh>();
-	//this->terrainAddon->
+	this->terrainAddon->Setup(false);
+	//this->SetSurface(this->placeholderSurface->GetSurface()->CreateInstance());
 }
 
 void TerrainHandler::GenerateTerrain()

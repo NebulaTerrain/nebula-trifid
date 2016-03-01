@@ -25,7 +25,7 @@ namespace Terrain
 	//------------------------------------------------------------------------------
 	/**
 	*/
-	TerrainAddon::TerrainAddon()
+	TerrainAddon::TerrainAddon() : terrainModelEnt(nullptr)
 	{
 	}
 
@@ -36,11 +36,8 @@ namespace Terrain
 	{
 	}
 
-	//------------------------------------------------------------------------------
-	/**
-	*/
 	void
-		TerrainAddon::Setup()
+		TerrainAddon::Setup(bool createAndAttachTerrainEntity)
 	{
 		width = 1024;
 		height = 1024;
@@ -51,10 +48,11 @@ namespace Terrain
 		brushTool = Terrain::BrushTool::Create();
 		brushTool->Setup();
 
+		if (createAndAttachTerrainEntity) CreateTerrainEntity();
+		else SetUpTerrainModel();
+
 		InitializeTexture();
-
-		CreateTerrainEntity();
-
+		
 		LoadShader();
 
 		UpdateTerrainMesh();
@@ -68,16 +66,26 @@ namespace Terrain
 	void
 		TerrainAddon::Discard()
 	{
-		stage->RemoveEntity(this->terrainModelEnt.cast<GraphicsEntity>());
+		if (this->terrainModelEnt != nullptr)
+		{
+			stage->RemoveEntity(this->terrainModelEnt.cast<GraphicsEntity>());
+			this->terrainModelEnt = 0;
+		}
+		else
+		{
+			terrainModel->DiscardInstance(terrainModelInstance);
+			Resources::ResourceManager::Instance()->DiscardManagedResource(managedModel.upcast<Resources::ManagedResource>());
+		}
 		this->ibo = 0;
 		this->vbo = 0;
 
 		this->heightMultiplierHandle = 0;
 		this->samplerHeightMapHandle = 0;
-		this->terrainModelEnt = 0;
 
 		Memory::Free(Memory::DefaultHeap, this->rHeightBuffer);
 		this->rHeightBuffer = 0;
+
+
 
 	}
 
@@ -107,19 +115,34 @@ namespace Terrain
 		this->terrainModelEnt->SetLoadSynced(true);
 		stage->AttachEntity(terrainModelEnt.cast<GraphicsEntity>());
 
-		terrainShapeNodeInstance = RenderUtil::NodeLookupUtil::LookupStateNodeInstance(terrainModelEnt, "root/pCube1").cast<Models::ShapeNodeInstance>();
+		terrainModel = terrainModelEnt->GetModelInstance()->GetModel();
 
+		terrainShapeNodeInstance = RenderUtil::NodeLookupUtil::LookupStateNodeInstance(terrainModelEnt, "root/pCube1").cast<Models::ShapeNodeInstance>();
 		terrainShapeNode = terrainShapeNodeInstance->GetModelNode().cast<Models::ShapeNode>();
+		surfaceInstance = terrainShapeNodeInstance->GetSurfaceInstance();
 		Ptr<Resources::ManagedMesh> terrainManagedMesh = terrainShapeNode->GetManagedMesh();
 		terrainMesh = terrainManagedMesh->GetMesh();
 	}
 
+	void TerrainAddon::SetUpTerrainModel()
+	{
+		managedModel = Resources::ResourceManager::Instance()->CreateManagedResource(Models::Model::RTTI, Resources::ResourceId("mdl:system/terrainPlane.n3"), 0, true).downcast<Models::ManagedModel>();
+		this->terrainModel = managedModel->GetModel();
+		this->terrainModelInstance = terrainModel->CreateInstance();
+
+		this->terrainShapeNodeInstance = terrainModelInstance->LookupNodeInstance("root/pCube1").cast<Models::ShapeNodeInstance>();
+		this->surfaceInstance = terrainShapeNodeInstance->GetSurfaceInstance();
+
+		this->terrainShapeNode = terrainShapeNodeInstance->GetModelNode().cast<Models::ShapeNode>();
+		this->terrainMesh = terrainShapeNode->GetManagedMesh()->GetMesh();
+	}
+
 	void TerrainAddon::LoadShader()
 	{
-		const Ptr<Materials::SurfaceInstance>& surface = terrainShapeNodeInstance->GetSurfaceInstance();
+		//const Ptr<Materials::SurfaceInstance>& surface = terrainShapeNodeInstance->GetSurfaceInstance();
 
-		this->heightMultiplierHandle = surface->GetConstant("HeightMultiplier");
-		this->samplerHeightMapHandle = surface->GetConstant("HeightMap");
+		this->heightMultiplierHandle = surfaceInstance->GetConstant("HeightMultiplier");
+		this->samplerHeightMapHandle = surfaceInstance->GetConstant("HeightMap");
 		
 		this->samplerHeightMapHandle->SetTexture(this->memoryHeightTexture);
 		this->heightMultiplierHandle->SetValue((float)this->heightMultiplier);
@@ -257,7 +280,7 @@ namespace Terrain
 	{
 		Math::bbox boundingBox = Math::bbox(Math::point((float)width / 2.f, (float)height, (float)height / 2.f), Math::vector((float)width / 2.f, (float)height, (float)height / 2.f));
 		terrainShapeNode->SetBoundingBox(boundingBox);
-		terrainModelEnt->GetModelInstance()->GetModel()->SetBoundingBox(boundingBox);
+		terrainModel->SetBoundingBox(boundingBox);
 		//matrix44 transform = matrix44::translation(-(width / 2.0f), 0, -(height / 2.0f));
 		//this->terrainModelEnt->SetTransform(transform);
 		GenerateTerrainBasedOnResolution();
