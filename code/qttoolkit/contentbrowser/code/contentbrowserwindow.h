@@ -62,6 +62,8 @@ public:
 	TextureImporter::TextureImporterWindow* GetTextureImporter() const;
 	/// returns posteffectcontroller
 	QtPostEffectAddon::PostEffectController * GetPostEffectWindow() const;
+	/// returns terrainaddon
+	Ptr<Widgets::TerrainHandler> GetTerrainHandler() const;
 
 	/// handle showing the window
 	void showEvent(QShowEvent* e);
@@ -327,5 +329,13 @@ ContentBrowserWindow::GetPostEffectWindow() const
 {
 	return this->postEffectController;
 }
+
+
+inline Ptr<Widgets::TerrainHandler>
+ContentBrowserWindow::GetTerrainHandler() const
+{
+	return this->terrainHandler;
+}
+
 } // namespace ContentBrowser
 //------------------------------------------------------------------------------

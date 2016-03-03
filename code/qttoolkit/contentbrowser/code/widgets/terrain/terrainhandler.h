@@ -64,6 +64,10 @@ public:
     /// called whenever an int field limit has changed
     void IntLimitChanged(uint i);
 
+	void ActivateSmoothBrush();
+	void ActivateDefaultBrush();
+	void UpdateTerrainAtPos(const Math::float4& worldPos, const float mod);
+
 public slots:
 	/// called when we should make a new material
 	void NewSurface();
@@ -87,7 +91,7 @@ private slots:
 
 	void UpdateBrushSize(int size);
 
-	void UpdateBrushMaxheight(double);
+	void UpdateBrushMaxHeight(double maxHeight);
 
     /// called whenever a material is selected
     void MaterialSelected(const QString& material);
@@ -130,7 +134,7 @@ private slots:
 
 	/// called whenever we create a new dialog
 	void OnNewCategory();
-
+	
 protected:
     /// sets up texture selection button and line edit based on resource
     void SetupTextureSlotHelper(QLineEdit* textureField, QPushButton* textureButton, Util::String& resource, const Util::String& defaultResource);
@@ -144,7 +148,7 @@ protected:
 
     /// clears layout recursively
     void ClearFrame(QLayout* layout);
-
+	
 private:
 	/// setup save dialog
 	void SetupSaveDialog();
@@ -157,6 +161,8 @@ private:
 
 	/// update thumbnail
 	void UpdateThumbnail();
+
+	bool eventFilter(QObject *obj, QEvent *ev);
 
 	Ptr<Terrain::TerrainAddon> terrainAddon;
 
@@ -215,6 +221,7 @@ private:
 	bool hasChanges;
 	Util::String category;
 	Util::String file;
+	QMap<QSlider*, QDoubleSpinBox*> sliderToDoubleSpinMap;
 };
 
 //------------------------------------------------------------------------------
@@ -226,32 +233,38 @@ TerrainHandler::SetUI(Ui::TerrainWidget* ui)
 {
     this->ui = ui;
 
-	connect(this->ui->heightMapSize_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(ui->heightMapSize_spinBox->setValue(int))); //visual
-	connect(this->ui->heightMapSize_spinBox, SIGNAL(valueChanged(int)), this, SLOT(ui->heightMapSize_horizontalSlider->setValue(int))); //visual
+	connect(this->ui->heightMapSize_horizontalSlider, SIGNAL(valueChanged(int)), this->ui->heightMapSize_spinBox, SLOT(setValue(int))); //visual
+	connect(this->ui->heightMapSize_spinBox, SIGNAL(valueChanged(int)), this->ui->heightMapSize_horizontalSlider, SLOT(setValue(int))); //visual
+	//connect(this->ui->heightMapSize_spinBox, SIGNAL(editingFinished()), this, SLOT(NewTerrain())); //using eventfilter to catch returnPressed
+	this->ui->heightMapSize_spinBox->installEventFilter(this);
 	connect(this->ui->new_pushButton, SIGNAL(clicked()), this, SLOT(NewTerrain()));
 	connect(this->ui->generate_pushButton, SIGNAL(clicked()), this, SLOT(GenerateTerrain()));
+	
 
-	//connect(this->ui->heightScale_horizontalSlider, SIGNAL(valueChanged(double)), this, SLOT(ui->heightScale_doubleSpinBox->setValue(double))); //visual
-	//connect(this->ui->heightScale_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(ui->heightScale_horizontalSlider->setValue(double))); //visual
-	connect(this->ui->heightScale_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateHeightMultiplier(double)));
+	//only enter in spinbox or sliding update the height
+	connect(this->ui->heightScale_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(VariableFloatSliderChanged())); //visual
+	connect(this->ui->heightScale_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateHeightMultiplier(double))); //visual & update
+	sliderToDoubleSpinMap[this->ui->heightScale_horizontalSlider] = this->ui->heightScale_doubleSpinBox;
+	
 	connect(this->ui->flattenHeightMap_pushButton, SIGNAL(clicked()), this, SLOT(FlattenTerrain()));
 	connect(this->ui->applyScale_pushButton, SIGNAL(clicked()), this, SLOT(ApplyHeightMultiplier()));
-
+	
 	connect(this->ui->fullBlurStrength_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(ui->fullBlurStrength_spinBox->setValue(int))); //visual
 	connect(this->ui->fullBlurStrength_spinBox, SIGNAL(valueChanged(int)), this, SLOT(ui->fullBlurStrength_horizontalSlider->setValue(int))); //visual
 	connect(this->ui->fullBlurHeightMap_pushButton, SIGNAL(clicked()), this, SLOT(BlurTerrain()));
 
-	//connect(this->ui->strength_horizontalSlider, SIGNAL(valueChanged(double)), this, SLOT(ui->strength_doubleSpinBox->setValue(double))); //visual
-	//connect(this->ui->strength_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(ui->strength_horizontalSlider->setValue(double))); //visual
-	connect(this->ui->strength_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateBrushStrength(double)));
+	connect(this->ui->strength_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(VariableFloatSliderChanged())); //visual
+	connect(this->ui->strength_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateBrushStrength(double))); //visual & update
+	sliderToDoubleSpinMap[this->ui->strength_horizontalSlider] = this->ui->strength_doubleSpinBox;
 
 	connect(this->ui->size_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(ui->size_spinBox->setValue(int))); //visual
 	connect(this->ui->size_spinBox, SIGNAL(valueChanged(int)), this, SLOT(ui->size_horizontalSlider->setValue(int))); //visual
-	connect(this->ui->size_spinBox, SIGNAL(valueChanged(int)), this, SLOT(UpdateBrushSize(int)));
+	connect(this->ui->size_horizontalSlider, SIGNAL(sliderReleased(int)), this, SLOT(UpdateBrushSize(int)));
+	this->ui->size_spinBox->installEventFilter(this);
 
-	//connect(this->ui->maxHeight_horizontalSlider, SIGNAL(valueChanged(double)), this, SLOT(ui->maxHeight_doubleSpinBox->setValue(double))); //visual
-	//connect(this->ui->maxHeight_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(ui->maxHeight_horizontalSlider->setValue(double))); //visual
-	connect(this->ui->maxHeight_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateBrushMaxheight(double)));
+	connect(this->ui->maxHeight_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(VariableFloatSliderChanged())); //visual
+	connect(this->ui->maxHeight_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateBrushMaxHeight(double))); //visual & update
+	sliderToDoubleSpinMap[this->ui->maxHeight_horizontalSlider] = this->ui->maxHeight_doubleSpinBox;
 
 	// setup terrain
 	this->terrainAddon = Terrain::TerrainAddon::Create();

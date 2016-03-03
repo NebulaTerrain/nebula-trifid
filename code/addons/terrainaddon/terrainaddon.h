@@ -31,16 +31,16 @@ namespace Terrain
 		/// discard
 		void Discard();
 
-		void LoadShader();
+		void GetShaderVariables();
 
 		void GenerateTerrainBasedOnResolution();
 		void UpdateTerrainMesh();
 		void SetUpVBO();
-
 		void InitializeTexture();
+		void UpdateTexture();
 		void UpdateTexture(void* data, SizeT size, SizeT width, SizeT height, IndexT left, IndexT top, IndexT mip);
 		void SetUpTerrainModel(Ptr<Graphics::ModelEntity> modelEntity);
-		Ptr<Graphics::ModelEntity> AttachTerrainEntity();
+		Ptr<Graphics::ModelEntity> CreateTerrainEntity();
 		Ptr<Graphics::ModelEntity> GetTerrainEntity();
 		Ptr<CoreGraphics::Mesh> GetTerrainMesh();
 
@@ -50,21 +50,22 @@ namespace Terrain
 		void UpdateTerrainAtPos(const Math::float4& pos, const float modifier);
 		void UpdateHeightMultiplier(float multiplier);
 		Ptr<Terrain::BrushTool> GetBrushTool();
-		
+		void FlattenTerrain(float newTerrainHeight);
+		void ApplyHeightMultiplier();
 	private:
 		#pragma pack (push)
 		#pragma pack(1)
 		struct VertexData
 		{
 			float x, z;
-			float u, v;
+			float u1, v1;
+			//float u2, v2;
 			VertexData(){}
-			VertexData(float x1, float z1, float u1, float v1) : x(x1), z(z1), u(u1), v(v1)
+			//VertexData(float x1, float z1, float u_1, float v_1, float u_2, float v_2) : x(x1), z(z1), u1(u_1), v1(v_1), u2(u_2), v2(v_2)
+			VertexData(float x1, float z1, float u_1, float v_1) : x(x1), z(z1), u1(u_1), v1(v_1)
 			{}
 		};
 		#pragma pack (pop) 
-
-		Ptr<Graphics::Stage> stage;
 
 		int width, height;
 		int heightMapWidth, heightMapHeight;
@@ -77,7 +78,6 @@ namespace Terrain
 		Util::Array<CoreGraphics::PrimitiveGroup> primitiveGroups;
 		Ptr<CoreGraphics::VertexBuffer> vbo;
 		Ptr<CoreGraphics::IndexBuffer> ibo;
-		Ptr<CoreGraphics::VertexLayout> vertexLayout;
 
 		// shader variables
 		Ptr<Materials::SurfaceConstant> heightMultiplierHandle;
@@ -96,6 +96,6 @@ namespace Terrain
 		Ptr<Models::Model> terrainModel;
 		Ptr<Terrain::BrushTool> brushTool;
 		Ptr<Models::ModelInstance> terrainModelInstance;
-
+		Math::bbox boundingBox;
 	};
 } // namespace Grid

@@ -17,6 +17,7 @@
 #include "godrays/godrayrendermodule.h"
 #include "materials/surfaceinstance.h"
 #include "materials/managedsurface.h"
+#include "picking/pickingserver.h"
 //------------------------------------------------------------------------------
 namespace ContentBrowser
 {
@@ -57,6 +58,7 @@ public:
 
 	/// returns pointer to light
 	const Ptr<Graphics::GlobalLightEntity>& GetLight() const;
+	Math::float4 PreviewState::CalculateWorldPosFromMouseAndDepth(const Math::float2& mouseScreenPos, const Math::float2& mousePixelPos);
 
 private:
 	/// called whenever the skin list is returned
@@ -74,6 +76,7 @@ private:
 	Util::Array<Ptr<Physics::PhysicsObject>> physicsObjects;
 
 	Ptr<Graphics::Stage> defaultStage;
+	Ptr<Picking::PickingServer> pickingServer;
 
 	Ptr<Materials::ManagedSurface> placeholderSurface;
 	Ptr<Graphics::Stage> surfaceStage;

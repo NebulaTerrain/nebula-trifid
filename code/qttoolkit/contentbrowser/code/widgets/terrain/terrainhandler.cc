@@ -428,22 +428,24 @@ TerrainHandler::VariableFloatSliderChanged()
     // cast to line edit
     QSlider* slider = static_cast<QSlider*>(sender);
 
-    // get index
-    uint index = this->variableSliderMap[slider];
+    // get doublespinbox
+    QDoubleSpinBox* doubleSpinBox = this->sliderToDoubleSpinMap[slider];
 
-    // set value
-    this->surface->SetValue(this->scalarVariables[index], slider->value() / 100.0f);
+	// set value
+	doubleSpinBox->setValue(slider->value() / 100.0f);
+   
+    //this->surface->SetValue(this->scalarVariables[index], slider->value() / 100.0f);
 
     // get spin box
-    QDoubleSpinBox* box = this->variableFloatValueMap.key(index);
+    //QDoubleSpinBox* box = this->variableFloatValueMap.key(index);
 
     // freeze signal from slider, set value, and unfreeze
-    box->blockSignals(true);
-    box->setValue((float)slider->value() / 100.0f);
-    box->blockSignals(false);
+    //box->blockSignals(true);
+    //box->setValue((float)slider->value() / 100.0f);
+    //box->blockSignals(false);
 
     // update UI immediately
-    QApplication::processEvents();
+    //QApplication::processEvents();
 }
 
 //------------------------------------------------------------------------------
@@ -509,22 +511,25 @@ TerrainHandler::VariableFloatFieldChanged()
     QDoubleSpinBox* box = static_cast<QDoubleSpinBox*>(sender);
 
     // get index
-    uint index = this->variableFloatValueMap[box];
+    QSlider* slider = this->sliderToDoubleSpinMap.key(box);
 
+	slider->blockSignals(true);
+	slider->setValue(box->value() * 100);
+	slider->blockSignals(false);
     // get slider and set value
-    QSlider* slider = this->variableSliderMap.key(index);
-    if (slider)
-    {
-        slider->blockSignals(true);
-        slider->setValue(box->value() * 100);
-        slider->blockSignals(false);
-    }
+    //QSlider* slider = this->variableSliderMap.key(index);
+    //if (slider)
+    //{
+    //   slider->blockSignals(true);
+    //    slider->setValue(box->value() * 100);
+    //    slider->blockSignals(false);
+    //}
 
     // update UI
-    QApplication::processEvents();
+    //QApplication::processEvents();
 
     // update float
-    this->FloatVariableChanged(index);
+    //this->FloatVariableChanged(index);
 }
 
 //------------------------------------------------------------------------------
@@ -1697,12 +1702,16 @@ TerrainHandler::UpdateThumbnail()
 
 void TerrainHandler::NewTerrain()
 {
-	//this->terrainAddon->Setup();
-	BaseHandler::Setup();
-	Ptr<PreviewState> previewState = ContentBrowserApp::Instance()->GetPreviewState();
-	previewState->SetModel(Resources::ResourceId("mdl:system/terrainPlane.n3"));
+	if (!isSetup)
+	{
+		BaseHandler::Setup();
+		Ptr<PreviewState> previewState = ContentBrowserApp::Instance()->GetPreviewState();
+		previewState->SetModel(Resources::ResourceId("mdl:system/terrainPlane.n3"));
 
-	this->terrainAddon->Setup(ContentBrowserApp::Instance()->GetPreviewState()->GetModel());
+		this->terrainAddon->Setup(ContentBrowserApp::Instance()->GetPreviewState()->GetModel());
+	}
+	int newSize = this->ui->heightMapSize_spinBox->value();
+	this->terrainAddon->UpdateTerrainWithNewSize(newSize, newSize);
 	//this->SetSurface(this->placeholderSurface->GetSurface()->CreateInstance());
 }
 
@@ -1713,18 +1722,20 @@ void TerrainHandler::GenerateTerrain()
 
 void TerrainHandler::FlattenTerrain()
 {
-	//terrainAddon->FlattenTerrain();
+	terrainAddon->FlattenTerrain(ui->heightScale_doubleSpinBox->value());
+	this->ui->heightScale_horizontalSlider->setValue(100);
 }
 
 void TerrainHandler::ApplyHeightMultiplier()
 {
-	//terrainAddon->ApplyHeightMultiplier();
-	this->ui->heightScale_horizontalSlider->setValue(0);
+	terrainAddon->ApplyHeightMultiplier();
+	this->ui->heightScale_horizontalSlider->setValue(100);
 }
 
 void TerrainHandler::UpdateHeightMultiplier(double multiplier)
 {
-	//terrainAddon->UpdateHeightMultiplier((float)(multiplier));
+	VariableFloatFieldChanged(); //updates the slider using box value
+	terrainAddon->UpdateHeightMultiplier((float)multiplier);
 }
 
 void TerrainHandler::BlurTerrain()
@@ -1734,17 +1745,64 @@ void TerrainHandler::BlurTerrain()
 
 void TerrainHandler::UpdateBrushStrength(double strength)
 {
-
+	VariableFloatFieldChanged(); //updates the slider using box value
+	terrainAddon->GetBrushTool()->SetStrength((float)strength);
 }
 
 void TerrainHandler::UpdateBrushSize(int size)
 {
-
+	terrainAddon->GetBrushTool()->SetRadius(size);
 }
 
-void TerrainHandler::UpdateBrushMaxheight(double)
+void TerrainHandler::UpdateBrushMaxHeight(double maxHeight)
 {
-
+	VariableFloatFieldChanged(); //updates the slider using box value
+	terrainAddon->GetBrushTool()->SetMaxHeight((float)maxHeight);
 }
 
+void TerrainHandler::ActivateSmoothBrush()
+{
+	terrainAddon->GetBrushTool()->ActivateSmoothBrush();
+}
+
+void TerrainHandler::ActivateDefaultBrush()
+{
+	terrainAddon->GetBrushTool()->ActivateDefaultBrush();
+}
+
+void TerrainHandler::UpdateTerrainAtPos(const Math::float4& worldPos, const float mod)
+{
+	terrainAddon->UpdateTerrainAtPos(worldPos, mod);
+}
+
+bool TerrainHandler::eventFilter(QObject *obj, QEvent *ev)
+{
+	if (obj == ui->heightMapSize_spinBox)
+	{
+		if (ev->type() == QEvent::KeyPress)
+		{
+			QKeyEvent *event = static_cast<QKeyEvent *>(ev);
+			if (event->key() == Qt::Key_Enter || event->key() == Qt::Key_Return)
+			{
+				NewTerrain();
+				return true;
+			}
+		}
+	}
+
+	else if (obj == ui->size_spinBox)
+	{
+		if (ev->type() == QEvent::KeyPress)
+		{
+			QKeyEvent *event = static_cast<QKeyEvent *>(ev);
+			if (event->key() == Qt::Key_Enter || event->key() == Qt::Key_Return)
+			{
+				UpdateBrushSize(ui->size_spinBox->value());
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
 } // namespace Widgets

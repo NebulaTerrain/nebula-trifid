@@ -25,7 +25,7 @@ namespace Terrain
 	//------------------------------------------------------------------------------
 	/**
 	*/
-	TerrainAddon::TerrainAddon() : terrainModelEnt(nullptr)
+	TerrainAddon::TerrainAddon() : terrainModelEnt(nullptr), rHeightBuffer(nullptr)
 	{
 	}
 
@@ -41,18 +41,20 @@ namespace Terrain
 	{
 		width = 1024;
 		height = 1024;
-		heightMapHeight = height + 1;
-		heightMapWidth = width + 1;
+		heightMapHeight = width + 1;
+		heightMapWidth = height + 1;
 		heightMultiplier = 1.f;
-		stage = GraphicsServer::Instance()->GetDefaultView()->GetStage();
 		brushTool = Terrain::BrushTool::Create();
 		brushTool->Setup();
 		
+
 		SetUpTerrainModel(modelEntity);
 
 		InitializeTexture();
+
+		UpdateTexture();
 		
-		LoadShader();
+		GetShaderVariables();
 
 		UpdateTerrainMesh();
 
@@ -74,36 +76,43 @@ namespace Terrain
 		Memory::Free(Memory::DefaultHeap, this->rHeightBuffer);
 		this->rHeightBuffer = 0;
 
-
-
+		Resources::ResourceManager::Instance()->UnregisterUnmanagedResource(this->memoryHeightTexture.upcast<Resources::Resource>());
 	}
+
 
 	void TerrainAddon::InitializeTexture()
 	{
+		this->memoryHeightTexture = CoreGraphics::Texture::Create();
+		this->memoryHeightTexture->SetResourceId("heightMapMemTexture");
+		Resources::ResourceManager::Instance()->RegisterUnmanagedResource(this->memoryHeightTexture.upcast<Resources::Resource>());
+	}
+
+	void TerrainAddon::UpdateTexture()
+	{
+		this->memoryHeightTexture->Unload();
+		Memory::Free(Memory::DefaultHeap, this->rHeightBuffer);
+		this->rHeightBuffer = 0;
+
 		SizeT frameSize = (this->heightMapWidth) * (this->heightMapHeight)*sizeof(float);
 		this->rHeightBuffer = (float*)Memory::Alloc(Memory::DefaultHeap, frameSize);
 		Memory::Clear(this->rHeightBuffer, frameSize);
 
-		//create texture
-		this->memoryHeightTexture = CoreGraphics::Texture::Create();
 		Ptr<CoreGraphics::MemoryTextureLoader> loader = CoreGraphics::MemoryTextureLoader::Create();
-		loader->SetImageBuffer(this->rHeightBuffer, this->width+1, this->height+1, CoreGraphics::PixelFormat::R32F);
+		loader->SetImageBuffer(this->rHeightBuffer, this->heightMapWidth, this->heightMapHeight, CoreGraphics::PixelFormat::R32F);
 		this->memoryHeightTexture->SetLoader(loader.upcast<Resources::ResourceLoader>());
 		this->memoryHeightTexture->SetAsyncEnabled(false);
 		this->memoryHeightTexture->SetResourceId("heightMapMemTexture");
 		this->memoryHeightTexture->Load();
 		n_assert(this->memoryHeightTexture->IsLoaded());
 		this->memoryHeightTexture->SetLoader(0);
-		Resources::ResourceManager::Instance()->RegisterUnmanagedResource(this->memoryHeightTexture.upcast<Resources::Resource>());
 	}
 
 
-	Ptr<Graphics::ModelEntity> TerrainAddon::AttachTerrainEntity()
+	Ptr<Graphics::ModelEntity> TerrainAddon::CreateTerrainEntity()
 	{
 		this->terrainModelEnt = ModelEntity::Create();
 		this->terrainModelEnt->SetResourceId(ResourceId("mdl:system/terrainPlane.n3"));
 		this->terrainModelEnt->SetLoadSynced(true);
-		stage->AttachEntity(terrainModelEnt.cast<GraphicsEntity>());
 		return terrainModelEnt;
 	}
 
@@ -116,9 +125,12 @@ namespace Terrain
 
 		this->terrainShapeNode = terrainShapeNodeInstance->GetModelNode().cast<Models::ShapeNode>();
 		this->terrainMesh = terrainShapeNode->GetManagedMesh()->GetMesh();
+
+		this->vbo = terrainMesh->GetVertexBuffer();
+		this->ibo = terrainMesh->GetIndexBuffer();
 	}
 
-	void TerrainAddon::LoadShader()
+	void TerrainAddon::GetShaderVariables()
 	{
 		//const Ptr<Materials::SurfaceInstance>& surface = terrainShapeNodeInstance->GetSurfaceInstance();
 
@@ -131,6 +143,9 @@ namespace Terrain
 
 	void TerrainAddon::GenerateTerrainBasedOnResolution()
 	{
+		vertexData.Clear();
+		indices.Clear();
+
 		int vertexCount = width * height;
 		int squares = (width - 1) * (height - 1);
 		int triangles = squares * 2;
@@ -176,7 +191,7 @@ namespace Terrain
 			{
 				//since i store the points column wise the next column starts at index = current column * height
 				int currentColumn = height * col;
-				vertexData.Append(VertexData((float)col, (float)row, ((float)col / (float)height), ((float)row / (float)width)));
+				vertexData.Append(VertexData((float)col, (float)row, ((float)col / (float)height), ((float)row / (float)width) ));
 				//we never do the last row nor last column, we don't do that with borders since they are already a part border faces that were build in previous loop
 				if (col == width - 1 || row == height - 1) continue; //this might be more expensive than writing another for loop set just for indices
 
@@ -201,6 +216,9 @@ namespace Terrain
 
 	void TerrainAddon::SetUpVBO()
 	{
+		vbo->Unload();
+		ibo->Unload();
+
 		// setup VBO
 		Util::Array<VertexComponent> components;
 		components.Append(VertexComponent(VertexComponent::Position, 0, VertexComponent::Float2, 0));
@@ -209,8 +227,7 @@ namespace Terrain
 		int vertCount = vertexData.Size();
 		int sizeofstruct = sizeof(VertexData);
 		vboLoader->Setup(components, vertCount, vertexData.Begin(), vertCount*sizeof(VertexData), VertexBuffer::UsageImmutable, VertexBuffer::AccessNone);
-
-		this->vbo = VertexBuffer::Create();
+		
 		this->vbo->SetLoader(vboLoader.upcast<ResourceLoader>());
 		this->vbo->SetAsyncEnabled(false);
 		this->vbo->Load();
@@ -220,16 +237,12 @@ namespace Terrain
 		Ptr<MemoryIndexBufferLoader> iboLoader = MemoryIndexBufferLoader::Create();
 		int indicesCount = indices.Size();
 		iboLoader->Setup(IndexType::Index32, indicesCount, indices.Begin(), indicesCount*sizeof(int));
-
-		this->ibo = IndexBuffer::Create();
+		
 		this->ibo->SetLoader(iboLoader.upcast<ResourceLoader>());
 		this->ibo->SetAsyncEnabled(false);
 		this->ibo->Load();
 		n_assert(this->ibo->IsLoaded());
 		this->ibo->SetLoader(NULL);
-
-		// setup ibo
-		this->vertexLayout = this->vbo->GetVertexLayout();
 
 		primitiveGroups.Clear();
 		CoreGraphics::PrimitiveGroup primitive;
@@ -257,42 +270,34 @@ namespace Terrain
 		return terrainMesh;
 	}
 
-	void TerrainAddon::UpdateTerrainMesh()
-	{
-		Math::bbox boundingBox = Math::bbox(Math::point((float)width / 2.f, (float)height, (float)height / 2.f), Math::vector((float)width / 2.f, (float)height, (float)height / 2.f));
-		terrainShapeNode->SetBoundingBox(boundingBox);
-		terrainModel->SetBoundingBox(boundingBox);
-		//matrix44 transform = matrix44::translation(-(width / 2.0f), 0, -(height / 2.0f));
-		//this->terrainModelEnt->SetTransform(transform);
-		GenerateTerrainBasedOnResolution();
-		SetUpVBO();
-		terrainMesh->GetVertexBuffer()->Unload();
-		terrainMesh->GetIndexBuffer()->Unload();
-		terrainMesh->SetVertexBuffer(vbo);
-		terrainMesh->SetIndexBuffer(ibo);
-		terrainMesh->SetPrimitiveGroups(primitiveGroups);
-	}
-
 	void TerrainAddon::UpdateTerrainWithNewSize(int width, int height)
 	{
 		this->width = width;
 		this->height = height;
 		this->heightMapWidth = width + 1;
 		this->heightMapHeight = height + 1;
-		UpdateTerrainMesh();
-		Memory::Free(Memory::DefaultHeap, this->rHeightBuffer);
-		this->rHeightBuffer = 0;
-		InitializeTexture();
+		UpdateTerrainMesh();		
+		UpdateTexture();
 		UpdateWorldSize();
+	}
+
+	void TerrainAddon::UpdateTerrainMesh()
+	{
+		boundingBox = Math::bbox(Math::point((width - 1.f) / 2.f, 20.f, (height - 1.f) / 2.f), Math::vector((width - 1.f) / 2.f, 20.f, (height - 1.f) / 2.f));
+		terrainShapeNode->SetBoundingBox(boundingBox);
+		terrainModel->SetBoundingBox(boundingBox);
+		//matrix44 transform = matrix44::translation(-(width / 2.0f), 0, -(height / 2.0f));
+		//this->terrainModelEnt->SetTransform(transform);
+		GenerateTerrainBasedOnResolution();
+		SetUpVBO();
+		terrainMesh->SetPrimitiveGroups(primitiveGroups);
 	}
 
 	void TerrainAddon::UpdateWorldSize()
 	{
-		Math::bbox box = Math::bbox(Math::point(0, (float)height, 0), Math::vector((float)width / 2.f, (float)height, (float)height / 2.f));
-
 		Ptr<Visibility::ChangeVisibilityBounds> msg = Visibility::ChangeVisibilityBounds::Create();
-		msg->SetWorldBoundingBox(box);
-		msg->SetStageName(stage->GetName().AsString());
+		msg->SetWorldBoundingBox(boundingBox);
+		msg->SetStageName(GraphicsServer::Instance()->GetDefaultView()->GetStage()->GetName().AsString());
 		Graphics::GraphicsInterface::Instance()->Send(msg.upcast<Messaging::Message>());
 	}
 
@@ -312,6 +317,26 @@ namespace Terrain
 	{
 		heightMultiplier = multiplier;
 		this->heightMultiplierHandle->SetValue(this->heightMultiplier);
+	}
+
+	void TerrainAddon::FlattenTerrain(float newTerrainHeight)
+	{
+		int frameSize = heightMapWidth*heightMapHeight;
+		for (int i = 0; i < frameSize; i++)
+		{
+			rHeightBuffer[i] = newTerrainHeight;
+		}
+		memoryHeightTexture->Update(rHeightBuffer, frameSize*sizeof(float), heightMapWidth, heightMapHeight, 0, 0, 0);
+	}
+
+	void TerrainAddon::ApplyHeightMultiplier()
+	{
+		int frameSize = heightMapWidth*heightMapHeight;
+		for (int i = 0; i < frameSize; i++)
+		{
+			rHeightBuffer[i] *= heightMultiplier;
+		}
+		memoryHeightTexture->Update(rHeightBuffer, frameSize*sizeof(float), heightMapWidth, heightMapHeight, 0, 0, 0);
 	}
 
 } // namespace Terrain

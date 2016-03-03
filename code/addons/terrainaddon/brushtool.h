@@ -33,6 +33,8 @@ namespace Terrain
 		int GetRadius();
 		void SetStrength(float newStrength);
 		float GetStrength();
+		void SetMaxHeight(float newMaxHeight);
+		float GetMaxHeight();
 		void SetTexture(Ptr<Terrain::BrushTexture> newTexture);
 		void SetFunction(Ptr<Terrain::BrushFunction> newFunction);
 		void ActivateSmoothBrush();

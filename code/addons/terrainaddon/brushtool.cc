@@ -109,4 +109,14 @@ namespace Terrain
 		brushTextures.Append(texture);
 	}
 
+	void BrushTool::SetMaxHeight(float newMaxHeight)
+	{
+		this->maxHeight = newMaxHeight;
+	}
+
+	float BrushTool::GetMaxHeight()
+	{
+		return maxHeight;
+	}
+
 } // namespace Terrain

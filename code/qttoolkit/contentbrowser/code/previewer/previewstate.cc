@@ -237,7 +237,39 @@ PreviewState::HandleInput()
 		// now apply to light
 		this->lightTransform = matrix44::multiply(this->lightTransform, trans);
 	}
-
+	if (ContentBrowserApp::Instance()->GetWindow()->GetTerrainHandler().isvalid() && ContentBrowserApp::Instance()->GetWindow()->GetTerrainHandler()->IsSetup())
+	{
+		Widgets::TerrainHandler* terrainHandler = ContentBrowserApp::Instance()->GetWindow()->GetTerrainHandler();
+		if (keyboard->KeyDown(Key::LeftShift))
+		{
+			terrainHandler->ActivateSmoothBrush();
+		}
+		if (keyboard->KeyUp(Key::LeftShift))
+		{
+			terrainHandler->ActivateDefaultBrush(); 
+		}
+		if (!keyboard->KeyPressed(Key::LeftMenu))
+		{
+			if (mouse->ButtonDown(MouseButton::LeftButton))
+			{
+				float mod = 1;
+				if (keyboard->KeyPressed(Key::LeftControl)) mod = -1.f;
+				float4 worldPos = CalculateWorldPosFromMouseAndDepth(mouse->GetScreenPosition(), mouse->GetPixelPosition());
+				terrainHandler->UpdateTerrainAtPos(worldPos, mod);
+			}
+			else if (mouse->ButtonPressed(MouseButton::LeftButton))
+			{
+				if (mouse->GetMovement().length() > 0.2f) // don't paint when mouse is stationary
+				{
+					float mod = 1;
+					if (keyboard->KeyPressed(Key::LeftControl)) mod = -1.f;
+					float4 worldPos = CalculateWorldPosFromMouseAndDepth(mouse->GetScreenPosition(),mouse->GetPixelPosition());
+					terrainHandler->UpdateTerrainAtPos(worldPos, mod);
+				}
+			}
+		}
+	}
+	
 	if (keyboard->KeyPressed(Key::F))
 	{
 		bbox boundingBox = this->modelEntity->GetGlobalBoundingBox();
@@ -253,6 +285,9 @@ void
 PreviewState::OnStateEnter(const Util::String& prevState)
 {
 	GameStateHandler::OnStateEnter(prevState);
+
+	this->pickingServer = Picking::PickingServer::Create();
+	this->pickingServer->Open();
 
 	// get the default stage
 	this->defaultStage = GraphicsServer::Instance()->GetDefaultView()->GetStage();
@@ -345,6 +380,9 @@ PreviewState::OnStateEnter(const Util::String& prevState)
 void
 PreviewState::OnStateLeave(const Util::String& nextState)
 {
+	this->pickingServer->Close();
+	this->pickingServer = 0;
+
 	// cleanup scene before quitting application
 	this->defaultStage->RemoveEntity(this->modelEntity.cast<GraphicsEntity>());
 	this->modelEntity = 0;
@@ -545,6 +583,28 @@ void
 PreviewState::SetShowWireframe(bool enable)
 {
 	this->modelEntity->SetVisible(!enable);
+}
+
+Math::float4 
+PreviewState::CalculateWorldPosFromMouseAndDepth(const Math::float2& mouseScreenPos, const Math::float2& mousePixelPos)
+{
+	float depth = Picking::PickingServer::Instance()->FetchDepth(mousePixelPos);
+
+	//n_printf("\ndepth distance %f\n", depth);
+	
+	float2 focalLength = Graphics::GraphicsServer::Instance()->GetDefaultView()->GetCameraEntity()->GetCameraSettings().GetFocalLength();
+	float2 mousePos((mouseScreenPos.x()*2.f - 1.f), -(mouseScreenPos.y()*2.f - 1.f));
+	//n_printf("\nmousePos %f %f\n", mousePos.x(), mousePos.y());
+	float2 viewSpace = float2::multiply(mousePos, focalLength);
+	vector viewSpacePos(viewSpace.x(), viewSpace.y(), -1);
+
+	viewSpacePos = float4::normalize3(viewSpacePos);
+	point surfaceSpacePos = point(viewSpacePos*depth);
+	
+	float4 worldPos = matrix44::transform(surfaceSpacePos, CoreGraphics::TransformDevice::Instance()->GetInvViewTransform());
+
+	return worldPos;
+	
 }
 
 } // namespace ContentBrowser
