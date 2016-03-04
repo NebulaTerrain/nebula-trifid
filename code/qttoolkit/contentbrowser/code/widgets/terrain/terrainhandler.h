@@ -66,8 +66,8 @@ public:
 
 	void ActivateSmoothBrush();
 	void ActivateDefaultBrush();
-	void UpdateTerrainAtPos(const Math::float4& worldPos, const float mod);
-
+	void UpdateTerrainAtPos(const Math::float2& mouseScreenPos, const Math::float2& mousePixelPos, const float mod);
+	Math::float4 CalculateWorldPosFromMouseAndDepth(const Math::float2& mouseScreenPos, const Math::float2& mousePixelPos);
 public slots:
 	/// called when we should make a new material
 	void NewSurface();
@@ -89,7 +89,9 @@ private slots:
 
 	void UpdateBrushStrength(double strength);
 
-	void UpdateBrushSize(int size);
+	void UpdateBrushRadius();
+
+	void UpdateBrushBlurStrength(double blurStrength);
 
 	void UpdateBrushMaxHeight(double maxHeight);
 
@@ -163,7 +165,7 @@ private:
 	void UpdateThumbnail();
 
 	bool eventFilter(QObject *obj, QEvent *ev);
-
+	
 	Ptr<Terrain::TerrainAddon> terrainAddon;
 
     QVBoxLayout* mainLayout;
@@ -249,21 +251,22 @@ TerrainHandler::SetUI(Ui::TerrainWidget* ui)
 	connect(this->ui->flattenHeightMap_pushButton, SIGNAL(clicked()), this, SLOT(FlattenTerrain()));
 	connect(this->ui->applyScale_pushButton, SIGNAL(clicked()), this, SLOT(ApplyHeightMultiplier()));
 	
-	connect(this->ui->fullBlurStrength_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(ui->fullBlurStrength_spinBox->setValue(int))); //visual
-	connect(this->ui->fullBlurStrength_spinBox, SIGNAL(valueChanged(int)), this, SLOT(ui->fullBlurStrength_horizontalSlider->setValue(int))); //visual
 	connect(this->ui->fullBlurHeightMap_pushButton, SIGNAL(clicked()), this, SLOT(BlurTerrain()));
 
-	connect(this->ui->strength_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(VariableFloatSliderChanged())); //visual
-	connect(this->ui->strength_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateBrushStrength(double))); //visual & update
+	connect(this->ui->strength_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(VariableFloatSliderChanged()));
+	connect(this->ui->strength_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateBrushStrength(double)));
 	sliderToDoubleSpinMap[this->ui->strength_horizontalSlider] = this->ui->strength_doubleSpinBox;
 
-	connect(this->ui->size_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(ui->size_spinBox->setValue(int))); //visual
-	connect(this->ui->size_spinBox, SIGNAL(valueChanged(int)), this, SLOT(ui->size_horizontalSlider->setValue(int))); //visual
-	connect(this->ui->size_horizontalSlider, SIGNAL(sliderReleased(int)), this, SLOT(UpdateBrushSize(int)));
-	this->ui->size_spinBox->installEventFilter(this);
+	connect(this->ui->radius_horizontalSlider, SIGNAL(valueChanged(int)), this->ui->radius_spinBox, SLOT(setValue(int))); //visual
+	connect(this->ui->radius_spinBox, SIGNAL(valueChanged(int)), this->ui->radius_horizontalSlider, SLOT(setValue(int))); //visual
+	connect(this->ui->radius_spinBox, SIGNAL(valueChanged(int)), this, SLOT(UpdateBrushRadius()));
 
-	connect(this->ui->maxHeight_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(VariableFloatSliderChanged())); //visual
-	connect(this->ui->maxHeight_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateBrushMaxHeight(double))); //visual & update
+	connect(this->ui->blurStrength_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(VariableFloatSliderChanged())); //visual
+	connect(this->ui->blurStrength_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateBrushBlurStrength(double)));
+	sliderToDoubleSpinMap[this->ui->blurStrength_horizontalSlider] = this->ui->blurStrength_doubleSpinBox;
+
+	connect(this->ui->maxHeight_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(VariableFloatSliderChanged())); 
+	connect(this->ui->maxHeight_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateBrushMaxHeight(double))); 
 	sliderToDoubleSpinMap[this->ui->maxHeight_horizontalSlider] = this->ui->maxHeight_doubleSpinBox;
 
 	// setup terrain

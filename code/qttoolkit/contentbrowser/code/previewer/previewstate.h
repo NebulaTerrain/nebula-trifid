@@ -58,8 +58,8 @@ public:
 
 	/// returns pointer to light
 	const Ptr<Graphics::GlobalLightEntity>& GetLight() const;
-	Math::float4 PreviewState::CalculateWorldPosFromMouseAndDepth(const Math::float2& mouseScreenPos, const Math::float2& mousePixelPos);
 
+	void FocusCameraOnEntity();
 private:
 	/// called whenever the skin list is returned
 	void OnFetchedSkinList(const Ptr<Messaging::Message>& msg);

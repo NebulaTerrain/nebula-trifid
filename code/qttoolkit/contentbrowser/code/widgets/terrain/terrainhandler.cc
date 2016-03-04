@@ -1702,17 +1702,26 @@ TerrainHandler::UpdateThumbnail()
 
 void TerrainHandler::NewTerrain()
 {
+	Ptr<PreviewState> previewState = ContentBrowserApp::Instance()->GetPreviewState();
 	if (!isSetup)
 	{
 		BaseHandler::Setup();
-		Ptr<PreviewState> previewState = ContentBrowserApp::Instance()->GetPreviewState();
+		
 		previewState->SetModel(Resources::ResourceId("mdl:system/terrainPlane.n3"));
 
 		this->terrainAddon->Setup(ContentBrowserApp::Instance()->GetPreviewState()->GetModel());
+		ui->heightMapSize_spinBox->setValue(1024);
+		ui->heightScale_doubleSpinBox->setValue(1);
+		ui->strength_doubleSpinBox->setValue(2);
+		ui->radius_spinBox->setValue(10);
+		ui->blurStrength_doubleSpinBox->setValue(1);
+		ui->maxHeight_doubleSpinBox->setValue(1024);
 	}
 	int newSize = this->ui->heightMapSize_spinBox->value();
 	this->terrainAddon->UpdateTerrainWithNewSize(newSize, newSize);
 	//this->SetSurface(this->placeholderSurface->GetSurface()->CreateInstance());
+
+	//previewState->FocusCameraOnEntity();
 }
 
 void TerrainHandler::GenerateTerrain()
@@ -1749,9 +1758,16 @@ void TerrainHandler::UpdateBrushStrength(double strength)
 	terrainAddon->GetBrushTool()->SetStrength((float)strength);
 }
 
-void TerrainHandler::UpdateBrushSize(int size)
+void TerrainHandler::UpdateBrushRadius()
 {
-	terrainAddon->GetBrushTool()->SetRadius(size);
+	terrainAddon->GetBrushTool()->SetRadius(this->ui->radius_spinBox->value());
+	terrainAddon->GetBrushTool()->SetBlurStrength((float)this->ui->blurStrength_doubleSpinBox->value());
+}
+
+void TerrainHandler::UpdateBrushBlurStrength(double blurStrength)
+{
+	VariableFloatFieldChanged();
+	terrainAddon->GetBrushTool()->SetBlurStrength((float)this->ui->blurStrength_doubleSpinBox->value());
 }
 
 void TerrainHandler::UpdateBrushMaxHeight(double maxHeight)
@@ -1770,8 +1786,9 @@ void TerrainHandler::ActivateDefaultBrush()
 	terrainAddon->GetBrushTool()->ActivateDefaultBrush();
 }
 
-void TerrainHandler::UpdateTerrainAtPos(const Math::float4& worldPos, const float mod)
+void TerrainHandler::UpdateTerrainAtPos(const Math::float2& mouseScreenPos, const Math::float2& mousePixelPos, const float mod)
 {
+	float4 worldPos = CalculateWorldPosFromMouseAndDepth(mouseScreenPos, mousePixelPos);
 	terrainAddon->UpdateTerrainAtPos(worldPos, mod);
 }
 
@@ -1790,19 +1807,26 @@ bool TerrainHandler::eventFilter(QObject *obj, QEvent *ev)
 		}
 	}
 
-	else if (obj == ui->size_spinBox)
-	{
-		if (ev->type() == QEvent::KeyPress)
-		{
-			QKeyEvent *event = static_cast<QKeyEvent *>(ev);
-			if (event->key() == Qt::Key_Enter || event->key() == Qt::Key_Return)
-			{
-				UpdateBrushSize(ui->size_spinBox->value());
-				return true;
-			}
-		}
-	}
-
 	return false;
 }
+
+Math::float4
+TerrainHandler::CalculateWorldPosFromMouseAndDepth(const Math::float2& mouseScreenPos, const Math::float2& mousePixelPos)
+{
+	float depth = Picking::PickingServer::Instance()->FetchDepth(mousePixelPos);
+
+	//n_printf("\ndepth distance %f\n", depth);
+
+	float2 focalLength = Graphics::GraphicsServer::Instance()->GetDefaultView()->GetCameraEntity()->GetCameraSettings().GetFocalLength();
+	float2 mousePos((mouseScreenPos.x()*2.f - 1.f), -(mouseScreenPos.y()*2.f - 1.f));
+	//n_printf("\nmousePos %f %f\n", mousePos.x(), mousePos.y());
+	float2 viewSpace = float2::multiply(mousePos, focalLength);
+	vector viewSpacePos(viewSpace.x(), viewSpace.y(), -1);
+
+	viewSpacePos = float4::normalize3(viewSpacePos);
+	point surfaceSpacePos = point(viewSpacePos*depth);
+
+	return matrix44::transform(surfaceSpacePos, CoreGraphics::TransformDevice::Instance()->GetInvViewTransform());
+}
+
 } // namespace Widgets

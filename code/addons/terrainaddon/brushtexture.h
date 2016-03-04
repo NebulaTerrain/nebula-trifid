@@ -17,29 +17,29 @@ Brush
 
 namespace Terrain
 {
-	class BrushTexture : public Core::RefCounted
-	{
-		__DeclareClass(BrushTexture);
-	public:
-		/// constructor
-		BrushTexture();
-		/// destructor
-		virtual ~BrushTexture();
+class BrushTexture : public Core::RefCounted
+{
+	__DeclareClass(BrushTexture);
+public:
+	/// constructor
+	BrushTexture();
+	/// destructor
+	virtual ~BrushTexture();
 
-		/// setup
-		void Setup(Resources::ResourceId resourceID);
-		/// discard
-		void Discard();
+	/// setup
+	void Setup(Resources::ResourceId resourceID);
+	/// discard
+	void Discard();
 		
-		unsigned char* sampledBrushBuffer;
-		void ResampleTexture(const int newSize);
-		int size;
-	private:
+	unsigned char* sampledBrushBuffer;
+	void ResampleTexture(const int newSize);
+	int size;
+private:
 		
-		void ConvertTexture(const Ptr<CoreGraphics::Texture>& tex, ILenum imageFileType);
-		unsigned char* brushTextureBuffer;
-		Ptr<Resources::ManagedTexture> texture;
+	void ConvertTexture(const Ptr<CoreGraphics::Texture>& tex, ILenum imageFileType);
+	unsigned char* brushTextureBuffer;
+	Ptr<Resources::ManagedTexture> texture;
 		
-		int orgSize;
-	};
+	int orgSize;
+};
 } // namespace Grid

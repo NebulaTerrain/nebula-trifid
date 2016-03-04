@@ -11,112 +11,129 @@
 
 namespace Terrain
 {
-	__ImplementClass(Terrain::BrushTool, 'TBTL', Core::RefCounted);
+__ImplementClass(Terrain::BrushTool, 'TBTL', Core::RefCounted);
+__ImplementSingleton(Terrain::BrushTool);
 
-	//------------------------------------------------------------------------------
-	/**
-	*/
-	BrushTool::BrushTool() : radius(32), strength(0.01f), maxHeight(1024.f)
+//------------------------------------------------------------------------------
+/**
+*/
+BrushTool::BrushTool() : 
+	radius(32),
+	blurPrecStrength(radius-1.f),
+	strength(10.f),
+	maxHeight(1024.f)
+{
+	__ConstructSingleton;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+BrushTool::~BrushTool()
+{
+	__DestructSingleton;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+	BrushTool::Setup()
+{
+	LoadBrushTextures();
+	brushSmooth = Terrain::BrushSmooth::Create();
+	brushDefaultAddRemove = Terrain::BrushFunction::Create();
+	SetTexture(brushTextures.Front());
+	SetFunction(brushDefaultAddRemove);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+	BrushTool::Discard()
+{
+
+}
+
+void BrushTool::SetRadius(int newRadius)
+{
+	if (newRadius < 1) radius = 1; //if someone has magically set radius to 0
+	else radius = newRadius;
+	brushTexture->ResampleTexture(radius * 2);
+}
+
+int BrushTool::GetRadius()
+{
+	return radius;
+}
+
+void BrushTool::SetStrength(float newStrength)
+{
+	strength = newStrength;
+}
+
+float BrushTool::GetStrength()
+{
+	return strength;
+}
+
+void BrushTool::SetTexture(Ptr<Terrain::BrushTexture> newTexture)
+{
+	brushTexture = newTexture;
+	int properBrushSize = this->radius * 2;
+	if (brushTexture->size != properBrushSize)
 	{
-		
+		brushTexture->ResampleTexture(properBrushSize);
 	}
+}
 
-	//------------------------------------------------------------------------------
-	/**
-	*/
-	BrushTool::~BrushTool()
-	{
-	}
+void BrushTool::SetFunction(Ptr<Terrain::BrushFunction> newFunction)
+{
+	function = newFunction;
+}
 
-	//------------------------------------------------------------------------------
-	/**
-	*/
-	void
-		BrushTool::Setup()
-	{
-		LoadBrushTextures();
-		brushSmooth = Terrain::BrushSmooth::Create();
-		brushDefaultAddRemove = Terrain::BrushFunction::Create();
-		SetTexture(brushTextures.Front());
-		SetFunction(brushDefaultAddRemove);
-	}
+void BrushTool::Paint(const Math::float4& pos, float* destTextureBuffer, const Math::float2& textureSize, const float modifier)
+{
 
-	//------------------------------------------------------------------------------
-	/**
-	*/
-	void
-		BrushTool::Discard()
-	{
+	function->ExecuteBrushFunction(brushTexture, pos, destTextureBuffer, textureSize, modifier);
+}
 
-	}
+void BrushTool::ActivateSmoothBrush()
+{
+	function = brushSmooth.cast<BrushFunction>();
+}
 
-	void BrushTool::SetRadius(int newRadius)
-	{
-		radius = newRadius;
-		brushTexture->ResampleTexture(radius * 2);
-	}
+void BrushTool::ActivateDefaultBrush()
+{
+	function = brushDefaultAddRemove.cast<BrushFunction>();
+}
 
-	int BrushTool::GetRadius()
-	{
-		return radius;
-	}
+void BrushTool::LoadBrushTextures()
+{
+	Ptr<Terrain::BrushTexture> texture = Terrain::BrushTexture::Create();
+	texture->Setup("tex:system/lightcones.dds");
+	brushTextures.Append(texture);
+}
 
-	void BrushTool::SetStrength(float newStrength)
-	{
-		strength = newStrength;
-	}
+void BrushTool::SetMaxHeight(float newMaxHeight)
+{
+	this->maxHeight = newMaxHeight;
+}
 
-	float BrushTool::GetStrength()
-	{
-		return strength;
-	}
+float BrushTool::GetMaxHeight()
+{
+	return maxHeight;
+}
 
-	void BrushTool::SetTexture(Ptr<Terrain::BrushTexture> newTexture)
-	{
-		brushTexture = newTexture;
-		int properBrushSize = this->radius * 2;
-		if (brushTexture->size != properBrushSize)
-		{
-			brushTexture->ResampleTexture(properBrushSize);
-		}
-	}
+void BrushTool::SetBlurStrength(float newBlurStrength)
+{
+	blurPrecStrength = (radius-1)*newBlurStrength;
+}
 
-	void BrushTool::SetFunction(Ptr<Terrain::BrushFunction> newFunction)
-	{
-		function = newFunction;
-	}
-
-	void BrushTool::Paint(const Math::float4& pos, float* textureBuffer, const Math::float2& textureSize, const float modifier)
-	{
-
-		function->ExecuteBrushFunction(radius, strength, brushTexture, pos, textureBuffer, textureSize, modifier, maxHeight);
-	}
-
-	void BrushTool::ActivateSmoothBrush()
-	{
-		function = brushSmooth.cast<BrushFunction>();
-	}
-
-	void BrushTool::ActivateDefaultBrush()
-	{
-		function = brushDefaultAddRemove.cast<BrushFunction>();
-	}
-
-	void BrushTool::LoadBrushTextures()
-	{
-		Ptr<Terrain::BrushTexture> texture = Terrain::BrushTexture::Create();
-		texture->Setup("tex:system/lightcones.dds");
-		brushTextures.Append(texture);
-	}
-
-	void BrushTool::SetMaxHeight(float newMaxHeight)
-	{
-		this->maxHeight = newMaxHeight;
-	}
-
-	float BrushTool::GetMaxHeight()
-	{
-		return maxHeight;
-	}
+float BrushTool::GetBlurStrength()
+{
+	return blurPrecStrength;
+}
 
 } // namespace Terrain

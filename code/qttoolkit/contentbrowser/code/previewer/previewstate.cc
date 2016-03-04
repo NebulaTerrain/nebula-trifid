@@ -220,7 +220,7 @@ PreviewState::HandleInput()
 	const Ptr<Mouse>& mouse = InputServer::Instance()->GetDefaultMouse();
 	const Ptr<Keyboard>& keyboard = InputServer::Instance()->GetDefaultKeyboard();
 
-	if (!this->workLight && mouse->ButtonPressed(MouseButton::LeftButton) && !keyboard->KeyPressed(Key::LeftMenu))
+	if (!this->workLight && mouse->ButtonPressed(MouseButton::RightButton) && !keyboard->KeyPressed(Key::LeftMenu))
 	{
 		// get movement
 		float2 movement = mouse->GetMovement();
@@ -254,8 +254,7 @@ PreviewState::HandleInput()
 			{
 				float mod = 1;
 				if (keyboard->KeyPressed(Key::LeftControl)) mod = -1.f;
-				float4 worldPos = CalculateWorldPosFromMouseAndDepth(mouse->GetScreenPosition(), mouse->GetPixelPosition());
-				terrainHandler->UpdateTerrainAtPos(worldPos, mod);
+				terrainHandler->UpdateTerrainAtPos(mouse->GetScreenPosition(), mouse->GetPixelPosition(), mod);
 			}
 			else if (mouse->ButtonPressed(MouseButton::LeftButton))
 			{
@@ -263,8 +262,7 @@ PreviewState::HandleInput()
 				{
 					float mod = 1;
 					if (keyboard->KeyPressed(Key::LeftControl)) mod = -1.f;
-					float4 worldPos = CalculateWorldPosFromMouseAndDepth(mouse->GetScreenPosition(),mouse->GetPixelPosition());
-					terrainHandler->UpdateTerrainAtPos(worldPos, mod);
+					terrainHandler->UpdateTerrainAtPos(mouse->GetScreenPosition(), mouse->GetPixelPosition(), mod);
 				}
 			}
 		}
@@ -272,9 +270,7 @@ PreviewState::HandleInput()
 	
 	if (keyboard->KeyPressed(Key::F))
 	{
-		bbox boundingBox = this->modelEntity->GetGlobalBoundingBox();
-		Ptr<GraphicsFeature::MayaCameraProperty> cameraProperty = this->defaultCam->FindProperty(GraphicsFeature::MayaCameraProperty::RTTI).downcast<GraphicsFeature::MayaCameraProperty>();
-		cameraProperty->SetCameraFocus(boundingBox.center(), boundingBox.diagonal_size());
+		FocusCameraOnEntity();
 	}
 }
 
@@ -585,26 +581,12 @@ PreviewState::SetShowWireframe(bool enable)
 	this->modelEntity->SetVisible(!enable);
 }
 
-Math::float4 
-PreviewState::CalculateWorldPosFromMouseAndDepth(const Math::float2& mouseScreenPos, const Math::float2& mousePixelPos)
+void 
+PreviewState::FocusCameraOnEntity()
 {
-	float depth = Picking::PickingServer::Instance()->FetchDepth(mousePixelPos);
-
-	//n_printf("\ndepth distance %f\n", depth);
-	
-	float2 focalLength = Graphics::GraphicsServer::Instance()->GetDefaultView()->GetCameraEntity()->GetCameraSettings().GetFocalLength();
-	float2 mousePos((mouseScreenPos.x()*2.f - 1.f), -(mouseScreenPos.y()*2.f - 1.f));
-	//n_printf("\nmousePos %f %f\n", mousePos.x(), mousePos.y());
-	float2 viewSpace = float2::multiply(mousePos, focalLength);
-	vector viewSpacePos(viewSpace.x(), viewSpace.y(), -1);
-
-	viewSpacePos = float4::normalize3(viewSpacePos);
-	point surfaceSpacePos = point(viewSpacePos*depth);
-	
-	float4 worldPos = matrix44::transform(surfaceSpacePos, CoreGraphics::TransformDevice::Instance()->GetInvViewTransform());
-
-	return worldPos;
-	
+	bbox boundingBox = this->modelEntity->GetGlobalBoundingBox();
+	Ptr<GraphicsFeature::MayaCameraProperty> cameraProperty = this->defaultCam->FindProperty(GraphicsFeature::MayaCameraProperty::RTTI).downcast<GraphicsFeature::MayaCameraProperty>();
+	cameraProperty->SetCameraFocus(boundingBox.center(), boundingBox.diagonal_size());
 }
 
 } // namespace ContentBrowser
