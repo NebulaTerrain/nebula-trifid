@@ -54,5 +54,6 @@ protected:
 	int currentBufferIndex;
 	float brushValue;
 	float textureValue;
+	int currentChannel;
 };
 } // namespace Grid

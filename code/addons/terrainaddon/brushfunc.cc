@@ -77,22 +77,23 @@ void BrushFunction::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brusht
 	//now we update only the region 
 
 	currentBrushIndex = 0;
-	x_startInit += Terrain::BrushTool::Instance()->GetCurrentChannel(); //we start att channel index;
+	//start and ends are ranges of pixels
+	currentChannel = Terrain::BrushTool::Instance()->GetCurrentChannel();
 	for (int y_start = y_startInit; y_start < y_end; y_start++)
 	{
-		currentColBufferIndex = destTexHeight*y_start;
+		currentColBufferIndex = destTexHeight*y_start * 4; //length of column * current number of column * number of bytes per pixel -> we get current column index in buffer
 		currentColBrushIndex = brushtexture->size*y_brush_start;
 		x_brush_start = x_brush_startInit;
-		for (int x_start = x_startInit; x_start < x_end; x_start+=4) //we skip to update only every fourth byte, one channel
+		for (int x_start = x_startInit; x_start < x_end; x_start++)
 		{
-			currentBufferIndex = currentColBufferIndex + x_start;
+			currentBufferIndex = currentColBufferIndex + x_start * 4 + currentChannel; //current column + x_start * number of bytes per pixel + channel number -> current pixel index
 			currentBrushIndex = currentColBrushIndex + x_brush_start;
 
 			brushValue = brushtexture->sampledBrushBuffer[currentBrushIndex] / 255.f; //normalize to use as mask and to scale well with strength, brush values are from 0 - 255
 			textureValue = destTextureBuffer[currentBufferIndex];
 
 			textureValue += (strength*brushValue*modifier);
-			textureValue = Math::n_clamp(textureValue, 0.f, maxHeight);
+			textureValue = Math::n_clamp(textureValue, 0.f, 255.f);
 			destTextureBuffer[currentBufferIndex] = (unsigned char)textureValue;
 
 			x_brush_start++;

@@ -62,7 +62,7 @@ BrushSmooth::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtexture,
 		int currentColBufferIndex = destTexHeight*y_start;
 		for (int x_start = x_startInit; x_start < x_end; x_start++)
 		{
-			int currentBufferIndex = currentColBufferIndex + x_start;
+			currentBufferIndex = currentColBufferIndex + x_start;
 				
 			regionToBlur[regionIndex] = destTextureBuffer[currentBufferIndex];
 			regionIndex++;
@@ -117,63 +117,56 @@ void BrushSmooth::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtex
 
 	//store region
 	int diameterOfRegionToBlur = (radius * 2);
-	int regionSize = diameterOfRegionToBlur*diameterOfRegionToBlur;
+	int regionSize = diameterOfRegionToBlur*diameterOfRegionToBlur*sizeof(float);
 	if (regionSize <= 0) return;
-	unsigned char * regionToBlur = (unsigned char*)Memory::Alloc(Memory::DefaultHeap, regionSize);
+	float * regionToBlur = (float*)Memory::Alloc(Memory::DefaultHeap, regionSize);
+
+	float* blurredRegion = (float*)Memory::Alloc(Memory::DefaultHeap, regionSize);
 
 	int regionIndex = 0;
-	x_startInit += Terrain::BrushTool::Instance()->GetCurrentChannel(); //has to start at specific channel
+	currentChannel = Terrain::BrushTool::Instance()->GetCurrentChannel();
 	for (int y_start = y_startInit; y_start < y_end; y_start++)
 	{
-		int currentColBufferIndex = destTexHeight*y_start;
-		for (int x_start = x_startInit; x_start < x_end; x_start+=4)
+		currentColBufferIndex = destTexHeight*y_start * 4;
+		for (int x_start = x_startInit; x_start < x_end; x_start++)
 		{
-			int currentBufferIndex = currentColBufferIndex + x_start;
+			currentBufferIndex = currentColBufferIndex + x_start * 4 + currentChannel;
 
 			regionToBlur[regionIndex] = destTextureBuffer[currentBufferIndex];
 			regionIndex++;
 		}
 	}
 
-	// create il image
-	ILint image = ilGenImage();
-	ilBindImage(image);
-
-	// create image
-	ILboolean result = ilTexImage(diameterOfRegionToBlur, diameterOfRegionToBlur, 1, 1, IL_RED, IL_UNSIGNED_BYTE, (ILubyte*)regionToBlur);
-
-	iluBlurGaussian(1);
-	unsigned char* blurredRegion = ilGetData();
-
+	GaussianBlur(regionToBlur, blurredRegion, diameterOfRegionToBlur, diameterOfRegionToBlur, blurRadius);
 	Memory::Free(Memory::DefaultHeap, regionToBlur);
+
 
 	//apply the blurred data
 
 	currentBrushIndex = 0;
 	regionIndex = 0;
-	x_startInit += Terrain::BrushTool::Instance()->GetCurrentChannel(); //has to start at specific channel
 	for (int y_start = y_startInit; y_start < y_end; y_start++)
 	{
-		currentColBufferIndex = destTexHeight*y_start;
+		currentColBufferIndex = destTexHeight*y_start * 4;
 		currentColBrushIndex = brushtexture->size*y_brush_start;
 		x_brush_start = x_brush_startInit;
-		for (int x_start = x_startInit; x_start < x_end; x_start+=4)
+		for (int x_start = x_startInit; x_start < x_end; x_start++)
 		{
-			currentBufferIndex = currentColBufferIndex + x_start;
+			currentBufferIndex = currentColBufferIndex + x_start * 4 + currentChannel;
 			currentBrushIndex = currentColBrushIndex + x_brush_start;
 
 			brushValue = brushtexture->sampledBrushBuffer[currentBrushIndex] / 255.f; //normalize to use as mask, brush values are from 0 - 255
 			float bluredValue = blurredRegion[regionIndex];
 			textureValue = destTextureBuffer[currentBufferIndex];
 			float interpolatedValue = Math::n_lerp(textureValue, bluredValue, brushValue);
+
 			destTextureBuffer[currentBufferIndex] = (unsigned char)interpolatedValue;
 			regionIndex++;
 			x_brush_start++;
 		}
 		y_brush_start++;
 	}
-
-	ilDeleteImage(image);
+	Memory::Free(Memory::DefaultHeap, blurredRegion);
 }
 
 //linear time gaussian blur
