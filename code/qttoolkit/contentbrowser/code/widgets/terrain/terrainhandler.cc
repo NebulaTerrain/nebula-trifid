@@ -266,6 +266,39 @@ TerrainHandler::MaterialInfo()
 /**
 */
 void
+TerrainHandler::Browse()
+{
+    // get sender
+    QObject* sender = this->sender();
+
+    // must be a button
+    QPushButton* button = static_cast<QPushButton*>(sender);
+
+    // get line edit
+    QLineEdit* text = this->textureTextMap.key(this->textureImgMap[button]);
+    QLabel* name = this->textureLabelMap.key(this->textureImgMap[button]);
+
+    // pick a texture
+	button->setStyleSheet("border: 2px solid red;");
+    int res = ResourceBrowser::AssetBrowser::Instance()->Execute("Assign to: " + name->text(), ResourceBrowser::AssetBrowser::Textures);
+	button->setStyleSheet("");
+    if (res == QDialog::Accepted)
+    {
+        // convert to nebula string
+        String texture = ResourceBrowser::AssetBrowser::Instance()->GetSelectedTexture().toUtf8().constData();
+
+		// set text of item
+        text->setText(texture.AsCharPtr());
+
+        // invoke texture change function
+        this->TextureChanged(this->textureImgMap[button]);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 TerrainHandler::TextureChanged(uint i)
 {
     // cast as line edit
@@ -631,39 +664,6 @@ TerrainHandler::VariableIntLimitsChanged()
     {
         uint index = this->upperLimitIntMap[box];
         this->IntLimitChanged(index);
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-TerrainHandler::Browse()
-{
-    // get sender
-    QObject* sender = this->sender();
-
-    // must be a button
-    QPushButton* button = static_cast<QPushButton*>(sender);
-
-    // get line edit
-    QLineEdit* text = this->textureTextMap.key(this->textureImgMap[button]);
-    QLabel* name = this->textureLabelMap.key(this->textureImgMap[button]);
-
-    // pick a texture
-	button->setStyleSheet("border: 2px solid red;");
-    int res = ResourceBrowser::AssetBrowser::Instance()->Execute("Assign to: " + name->text(), ResourceBrowser::AssetBrowser::Textures);
-	button->setStyleSheet("");
-    if (res == QDialog::Accepted)
-    {
-        // convert to nebula string
-        String texture = ResourceBrowser::AssetBrowser::Instance()->GetSelectedTexture().toUtf8().constData();
-
-		// set text of item
-        text->setText(texture.AsCharPtr());
-
-        // invoke texture change function
-        this->TextureChanged(this->textureImgMap[button]);
     }
 }
 
@@ -1707,8 +1707,7 @@ void TerrainHandler::NewTerrain()
 	if (!isSetup)
 	{
 		BaseHandler::Setup();
-		
-		previewState->SetModel(Resources::ResourceId("mdl:system/terrainPlane.n3"));
+		previewState->SetModel(Resources::ResourceId("mdl:examples/plane.n3"));
 
 		this->terrainAddon->Setup(ContentBrowserApp::Instance()->GetPreviewState()->GetModel());
 		ui->heightMapSize_spinBox->setValue(1024);
