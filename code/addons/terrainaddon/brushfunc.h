@@ -23,7 +23,7 @@ public:
 	/// destructor
 	virtual ~BrushFunction();
 	virtual void ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtexture, const Math::float4& pos, float* destTextureBuffer, const Math::float2& destTextureSize, const float modifier);
-
+	virtual void ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtexture, const Math::float4& pos, unsigned char* destTextureBuffer, const Math::float2& destTextureSize, const float modifier);
 	void CalculateRegionToUpdate(const Math::float4 &pos, const int width, const int height, const int radius);
 	
 

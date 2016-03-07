@@ -55,6 +55,11 @@ public:
 	Ptr<Terrain::BrushTool> GetBrushTool();
 	void FlattenTerrain(float newTerrainHeight);
 	void ApplyHeightMultiplier();
+	Ptr<Materials::SurfaceInstance> GetSurfaceInstance();
+	void CreateMaskTexutre(Util::String matVarName);
+
+	void SwitchChannel(int mask, int channel);
+	void UpdateMasks();
 private:
 	#pragma pack (push)
 	#pragma pack(1)
@@ -86,9 +91,18 @@ private:
 	Ptr<Materials::SurfaceConstant> heightMultiplierHandle;
 	Ptr<Materials::SurfaceConstant> samplerHeightMapHandle;
 	Ptr<Materials::SurfaceConstant> transformHandle;
+	Util::Array<Ptr<Materials::SurfaceConstant>> maskHandles;
+	Util::Array<Util::String> maskVarNames;
+
+	Ptr<CoreGraphics::Texture> currentTexture;
+	unsigned char *currentBuffer;
+	int currentChannel;
 
 	Ptr<CoreGraphics::Texture> memoryHeightTexture;
 	float *rHeightBuffer;
+
+	Util::Array<Ptr<CoreGraphics::Texture>> maskTextures;
+	Util::Array<unsigned char*> maskBuffers;
 
 	Ptr<Graphics::ModelEntity> terrainModelEnt;
 	Ptr<CoreGraphics::Mesh> terrainMesh;

@@ -115,7 +115,7 @@ TerrainHandler::Setup(const QString& resource)
 
 	// get layout
 	this->mainLayout = static_cast<QVBoxLayout*>(this->ui->variableFrame->layout());
-	
+	this->brushesLayout = static_cast<QVBoxLayout*>(this->ui->variableFrame_brushes->layout());
 	// don't allow system managed resources to be modified
 	if (this->category != "system")
 	{
@@ -297,7 +297,8 @@ TerrainHandler::TextureChanged(uint i)
     Util::Variant var;
     var.SetType(Util::Variant::Object);
     var.SetObject(textureObject->GetTexture());
-    this->surface->SetValue(this->textureVariables[i], var);
+	Util::StringAtom textureId = this->textureVariables[i];
+	this->surface->SetValue(textureId, var);
 	this->OnModified();
 }
 
@@ -1716,11 +1717,21 @@ void TerrainHandler::NewTerrain()
 		ui->radius_spinBox->setValue(10);
 		ui->blurStrength_doubleSpinBox->setValue(1);
 		ui->maxHeight_doubleSpinBox->setValue(1024);
+		MakeBrushTexturesUI();
+
+		// create resource
+		this->managedSurface = Resources::ResourceManager::Instance()->CreateManagedResource(Surface::RTTI, "sur:examples/mariusz.sur", NULL, true).downcast<Materials::ManagedSurface>();
+		this->surface = this->managedSurface->GetSurface().downcast<MutableSurface>();
+
+		// create one instance so that the textures are loaded...
+		this->surfaceInstance = this->surface->CreateInstance();
+		previewState->SetSurface(this->surfaceInstance.upcast<Materials::SurfaceInstance>());
+		MakeMaterialChannels();
 	}
 	int newSize = this->ui->heightMapSize_spinBox->value();
 	this->terrainAddon->UpdateTerrainWithNewSize(newSize, newSize);
 	//this->SetSurface(this->placeholderSurface->GetSurface()->CreateInstance());
-
+	
 	//previewState->FocusCameraOnEntity();
 }
 
@@ -1827,6 +1838,165 @@ TerrainHandler::CalculateWorldPosFromMouseAndDepth(const Math::float2& mouseScre
 	point surfaceSpacePos = point(viewSpacePos*depth);
 
 	return matrix44::transform(surfaceSpacePos, CoreGraphics::TransformDevice::Instance()->GetInvViewTransform());
+}
+
+void TerrainHandler::MakeBrushTexturesUI()
+{
+	this->brushesLayout = static_cast<QVBoxLayout*>(this->ui->variableFrame_brushes->layout());
+	Util::Array<Ptr<Terrain::BrushTexture>> textures = terrainAddon->GetBrushTool()->GetBrushTextures();
+	int row = 0;
+	int col = 0;
+	int maxNumOfCol = 5;
+	// add textures
+	for (int i = 0; i < textures.Size(); i++)
+	{
+		col = i % maxNumOfCol;
+		
+		Ptr<CoreGraphics::Texture> textureObject = textures[i]->GetManagedTexture()->GetTexture();
+		String resource = textureObject->GetResourceId().AsString();
+
+		// create items
+		QPushButton* textureImgButton = new QPushButton();
+
+		QPixmap pixmap;
+		
+		resource.ChangeAssignPrefix("tex");
+		resource.ChangeFileExtension("dds");
+		if (IO::IoServer::Instance()->FileExists(resource))
+		{
+			if (resource.IsValid())
+			{
+				IO::URI texFile = resource;
+				pixmap.load(texFile.LocalPath().AsCharPtr());
+				int width = n_min(pixmap.width(), 512);
+				int height = n_min(pixmap.height(), 512);
+				pixmap = pixmap.scaled(QSize(24, 24), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+				textureImgButton->setToolTip("<html><img height=" + QString::number(height) + " width=" + QString::number(width) + " src=\"" + QString(texFile.LocalPath().AsCharPtr()) + "\"/></html>");
+			}
+		}
+
+		// connect slots
+		//connect a slot that will call to switch brushtool currentTexture to this texture
+		//connect(textureImgButton, SIGNAL(released()), this, SLOT(Browse()));
+
+		QPalette palette;
+		palette.setBrush(textureImgButton->backgroundRole(), QBrush(pixmap));
+		textureImgButton->setPalette(palette);
+		textureImgButton->setFixedSize(QSize(24, 24));
+		textureImgButton->setMask(pixmap.mask());
+		// add layout to base layout
+		QGridLayout* layout = static_cast<QGridLayout*>(this->ui->variableFrame_brushes->layout());
+		layout->addWidget(textureImgButton, row, col, 0);
+		//this->brushesLayout->addWidget(textureImgButton);
+		if (col == maxNumOfCol-1) row++;
+	}
+
+}
+
+void TerrainHandler::MakeMaterialChannels()
+{
+	//shader will contain:
+	/*
+	1 HeightMap
+	1 MaskMap with 4 channels
+	4 textures for each channel
+	//i load height map as one
+	//i load mask as one
+	*/
+	this->mainLayout = static_cast<QVBoxLayout*>(this->ui->variableFrame->layout());
+
+	// get material
+	Ptr<Material> mat = this->surface->GetMaterialTemplate();
+
+	// add textures
+	Array<Material::MaterialParameter> textures = this->GetTextures(mat);
+	for (int i = 0; i < textures.Size(); i++)
+	{
+		// copy parameter
+		Material::MaterialParameter param = textures[i];
+		
+		// get texture
+		Util::Variant texValue = this->surface->GetValue(param.name);
+		if (texValue.GetType() != Variant::Object) continue;
+
+		// create texture variables
+		this->textureVariables.Add(i, param.name);
+
+		// create new horizontal layout 
+		QHBoxLayout* varLayout = new QHBoxLayout;
+
+		Ptr<CoreGraphics::Texture> textureObject = (CoreGraphics::Texture*)texValue.GetObject();
+		this->defaultTextureMap[i] = param.defaultVal.GetString().AsCharPtr();
+		String res = textureObject->GetResourceId().AsString();
+
+		// get texture info
+		String name = param.name;
+		
+		// create items
+		QLabel* texName = new QLabel(name.AsCharPtr());
+		QFont font = texName->font();
+		font.setBold(true);
+		texName->setFont(font);
+		QPushButton* texImg = new QPushButton();
+		QLineEdit* texRes = new QLineEdit();
+		this->SetupTextureSlotHelper(texRes, texImg, res, textureObject->GetResourceId().AsString());
+
+		// add both elements to dictionaries
+		this->textureTextMap[texRes] = i;
+		this->textureImgMap[texImg] = i;
+		this->textureLabelMap[texName] = i;
+
+		// connect slots
+		connect(texImg, SIGNAL(released()), this, SLOT(Browse()));
+		connect(texRes, SIGNAL(editingFinished()), this, SLOT(TextureTextChanged()));
+
+		// add stuff to layout
+		varLayout->addWidget(texName);
+
+		// space coming items
+		varLayout->addStretch(100);
+		texRes->setFixedWidth(150);
+		String temp = name;
+
+		int charIndex = temp.FindCharIndex('_');
+		if (charIndex != InvalidIndex) temp.TerminateAtIndex(charIndex);
+
+		if (temp != "TextureMask")
+		{
+			QRadioButton * texRadioButton = new QRadioButton();
+			this->textureRadioMap[texRadioButton] = i;
+
+			connect(texRadioButton, SIGNAL(clicked()), this, SLOT(SwitchChannel()));
+
+			varLayout->addWidget(texRadioButton);
+		}
+		
+		varLayout->addWidget(texRes);
+		varLayout->addWidget(texImg);
+
+		// add layout to base layout
+		this->mainLayout->addLayout(varLayout);
+		
+	}
+}
+
+void TerrainHandler::SwitchChannel()
+{
+
+	// get sender
+	QObject* sender = this->sender();
+
+	QRadioButton* radioButton = static_cast<QRadioButton*>(sender);
+
+	// get index
+	uint id = this->textureRadioMap[radioButton];
+	if (id == 0) terrainAddon->SwitchChannel(-1, -1);
+	else {
+		id = id - 1;
+		int channel = id % 4;
+		int mask = (id / 4);
+		terrainAddon->SwitchChannel(mask, channel);
+	}
 }
 
 } // namespace Widgets

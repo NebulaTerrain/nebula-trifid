@@ -32,7 +32,8 @@ TerrainAddon::TerrainAddon() :
 	height(1024),
 	heightMapHeight(width + 1),
 	heightMapWidth(height + 1),
-	heightMultiplier(1.f)
+	heightMultiplier(1.f),
+	currentChannel(-1)
 {
 	
 }
@@ -54,7 +55,11 @@ TerrainAddon::Setup(Ptr<Graphics::ModelEntity> modelEntity)
 
 	InitializeTexture();
 
+	//CreateMaskTexutre("TextureMask_1");
+
 	UpdateTexture();
+
+	UpdateMasks();
 		
 	GetShaderVariables();
 
@@ -88,11 +93,14 @@ TerrainAddon::InitializeTexture()
 	this->memoryHeightTexture = CoreGraphics::Texture::Create();
 	this->memoryHeightTexture->SetResourceId("heightMapMemTexture");
 	Resources::ResourceManager::Instance()->RegisterUnmanagedResource(this->memoryHeightTexture.upcast<Resources::Resource>());
+
+	currentTexture = memoryHeightTexture;
 }
 
 void 
 TerrainAddon::UpdateTexture()
 {
+	Resources::ResourceId resName = memoryHeightTexture->GetResourceId();
 	this->memoryHeightTexture->Unload();
 	Memory::Free(Memory::DefaultHeap, this->rHeightBuffer);
 	this->rHeightBuffer = 0;
@@ -105,10 +113,12 @@ TerrainAddon::UpdateTexture()
 	loader->SetImageBuffer(this->rHeightBuffer, this->heightMapWidth, this->heightMapHeight, CoreGraphics::PixelFormat::R32F);
 	this->memoryHeightTexture->SetLoader(loader.upcast<Resources::ResourceLoader>());
 	this->memoryHeightTexture->SetAsyncEnabled(false);
-	this->memoryHeightTexture->SetResourceId("heightMapMemTexture");
+	this->memoryHeightTexture->SetResourceId(resName);
 	this->memoryHeightTexture->Load();
 	n_assert(this->memoryHeightTexture->IsLoaded());
 	this->memoryHeightTexture->SetLoader(0);
+
+	currentBuffer = (unsigned char*)rHeightBuffer;
 }
 
 
@@ -128,7 +138,7 @@ TerrainAddon::SetUpTerrainModel(Ptr<Graphics::ModelEntity> modelEntity)
 	this->terrainModel = terrainModelEnt->GetModelInstance()->GetModel();
 	this->terrainShapeNodeInstance = RenderUtil::NodeLookupUtil::LookupStateNodeInstance(terrainModelEnt, "root/pCube1").cast<Models::ShapeNodeInstance>();
 	this->surfaceInstance = terrainShapeNodeInstance->GetSurfaceInstance();
-
+	
 	this->terrainShapeNode = terrainShapeNodeInstance->GetModelNode().cast<Models::ShapeNode>();
 	this->terrainMesh = terrainShapeNode->GetManagedMesh()->GetMesh();
 
@@ -141,11 +151,22 @@ TerrainAddon::GetShaderVariables()
 {
 	//const Ptr<Materials::SurfaceInstance>& surface = terrainShapeNodeInstance->GetSurfaceInstance();
 
+	//get
 	this->heightMultiplierHandle = surfaceInstance->GetConstant("HeightMultiplier");
 	this->samplerHeightMapHandle = surfaceInstance->GetConstant("HeightMap");
-		
+	
+	//set
 	this->samplerHeightMapHandle->SetTexture(this->memoryHeightTexture);
 	this->heightMultiplierHandle->SetValue((float)this->heightMultiplier);
+
+	for (int i = 0; i < maskHandles.Size(); i++)
+	{
+		//mask handles are generated when mask is created
+		//update if necessary:
+		this->maskHandles[i] = surfaceInstance->GetConstant(this->maskVarNames[i]);
+		//set
+		this->maskHandles[i]->SetTexture(maskTextures[i]);
+	}
 }
 
 void 
@@ -291,6 +312,7 @@ TerrainAddon::UpdateTerrainWithNewSize(int width, int height)
 	this->heightMapHeight = height+1;
 	UpdateTerrainMesh();		
 	UpdateTexture();
+	UpdateMasks();
 	UpdateWorldSize();
 }
 
@@ -319,8 +341,18 @@ void
 TerrainAddon::UpdateTerrainAtPos(const Math::float4& pos, const float modifier)
 {
 	//n_printf("\nmousePos %f %f\n", pos.x(), pos.z());
-	brushTool->Paint(pos, rHeightBuffer, float2((float)heightMapWidth, (float)heightMapHeight), modifier);
-	memoryHeightTexture->Update(rHeightBuffer, heightMapWidth*heightMapHeight*sizeof(float), heightMapWidth, heightMapHeight, 0, 0, 0);
+	if (currentChannel == InvalidIndex)
+	{
+		brushTool->Paint(pos, (float*)currentBuffer, float2((float)heightMapWidth, (float)heightMapHeight), modifier);
+		currentTexture->Update((float*)currentBuffer, heightMapWidth*heightMapHeight*sizeof(float), heightMapWidth, heightMapHeight, 0, 0, 0);
+		//brushTool->Paint(pos, rHeightBuffer, float2((float)heightMapWidth, (float)heightMapHeight), modifier);
+		//memoryHeightTexture->Update(rHeightBuffer, heightMapWidth*heightMapHeight*sizeof(float), heightMapWidth, heightMapHeight, 0, 0, 0);
+	}
+	else
+	{
+		brushTool->Paint(pos, currentBuffer, float2((float)heightMapWidth, (float)heightMapHeight), modifier);
+		currentTexture->Update(currentBuffer, heightMapWidth*heightMapHeight*sizeof(float), heightMapWidth, heightMapHeight, 0, 0, 0);
+	}
 }
 
 Ptr<Terrain::BrushTool> 
@@ -364,6 +396,71 @@ TerrainAddon::UpdateBoundingBox()
 	boundingBox = Math::bbox(Math::point((width - 1.f) / 2.f, 10.f, (height - 1.f) / 2.f), Math::vector((width - 1.f) / 2.f, 10.f, (height - 1.f) / 2.f));
 	terrainShapeNode->SetBoundingBox(boundingBox);
 	terrainModel->SetBoundingBox(boundingBox);
+}
+
+Ptr<Materials::SurfaceInstance> TerrainAddon::GetSurfaceInstance()
+{
+	return surfaceInstance;
+}
+
+void TerrainAddon::CreateMaskTexutre(Util::String matVarName)
+{
+	Ptr<CoreGraphics::Texture> maskTexture =  CoreGraphics::Texture::Create();
+	Util::String resName = Util::String::Sprintf("heightMapTextureMask_%d", maskTextures.Size());
+	maskTexture->SetResourceId(resName);
+	Resources::ResourceManager::Instance()->RegisterUnmanagedResource(maskTexture.upcast<Resources::Resource>());
+
+	unsigned char* maskBuffer = nullptr;
+
+	maskTextures.Append(maskTexture);
+	maskBuffers.Append(maskBuffer);
+
+	maskHandles.Append(surfaceInstance->GetConstant(matVarName));
+	maskVarNames.Append(matVarName);
+}
+
+void TerrainAddon::SwitchChannel(int mask, int channel)
+{
+	currentChannel = channel;
+	if (channel == InvalidIndex)
+	{
+		currentTexture = memoryHeightTexture;
+		currentBuffer = (unsigned char*)rHeightBuffer;
+		brushTool->SetCurrentChannel(0);
+	}
+	else
+	{
+		currentTexture = maskTextures[mask];
+		currentBuffer = maskBuffers[mask];
+		currentChannel = channel;
+		brushTool->SetCurrentChannel(channel);
+	}
+	
+}
+
+void TerrainAddon::UpdateMasks()
+{
+	for (int i = 0; i < maskTextures.Size(); i++)
+	{
+		Resources::ResourceId resName = maskTextures[i]->GetResourceId();
+
+		maskTextures[i]->Unload();
+		Memory::Free(Memory::DefaultHeap, maskBuffers[i]);
+		maskBuffers[i] = 0;
+
+		SizeT frameSize = (this->heightMapWidth) * (this->heightMapHeight)*4; //4 channels 1 byte per channel - 8 bit
+		maskBuffers[i] = (unsigned char*)Memory::Alloc(Memory::DefaultHeap, frameSize);
+		Memory::Clear(maskBuffers[i], frameSize);
+
+		Ptr<CoreGraphics::MemoryTextureLoader> loader = CoreGraphics::MemoryTextureLoader::Create();
+		loader->SetImageBuffer(maskBuffers[i], this->heightMapWidth, this->heightMapHeight, CoreGraphics::PixelFormat::SRGBA8);
+		maskTextures[i]->SetLoader(loader.upcast<Resources::ResourceLoader>());
+		maskTextures[i]->SetAsyncEnabled(false);
+		maskTextures[i]->SetResourceId(resName);
+		maskTextures[i]->Load();
+		n_assert(maskTextures[i]->IsLoaded());
+		maskTextures[i]->SetLoader(0);
+	}
 }
 
 } // namespace Terrain

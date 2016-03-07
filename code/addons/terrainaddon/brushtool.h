@@ -43,6 +43,10 @@ public:
 	void ActivateSmoothBrush();
 	void ActivateDefaultBrush();
 	void Paint(const Math::float4& pos, float* heightTextureBuffer, const Math::float2& heightTextureSize, const float modifier);
+	void Paint(const Math::float4& pos, unsigned char* heightTextureBuffer, const Math::float2& heightTextureSize, const float modifier);
+	Util::Array<Ptr<Terrain::BrushTexture>> GetBrushTextures();
+	void SetCurrentChannel(int channel);
+	int GetCurrentChannel();
 private:
 
 	Ptr<Terrain::BrushTexture> brushTexture;
@@ -51,10 +55,11 @@ private:
 	float blurPrecStrength;
 	float strength;
 	float maxHeight;
+	int currentChannel;
 
 	Util::Array<Ptr<Terrain::BrushTexture>> brushTextures;
-	void LoadBrushTextures();
-
+	Util::Array<Ptr<Terrain::BrushTexture>> LoadBrushTextures();
+	
 	Ptr<Terrain::BrushFunction> brushDefaultAddRemove;
 	Ptr<Terrain::BrushSmooth> brushSmooth;
 };

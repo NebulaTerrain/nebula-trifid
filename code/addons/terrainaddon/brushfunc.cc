@@ -40,7 +40,7 @@ BrushFunction::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtextur
 	strength = Terrain::BrushTool::Instance()->GetStrength();
 	maxHeight = Terrain::BrushTool::Instance()->GetMaxHeight();
 
-	//now we update only the region and we clamp it if big brush is close to the border
+	//now we update only the region 
 
 	currentBrushIndex = 0;
 	for (int y_start = y_startInit; y_start < y_end; y_start++)
@@ -60,6 +60,41 @@ BrushFunction::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtextur
 			textureValue = Math::n_clamp(textureValue, 0.f, maxHeight);
 			destTextureBuffer[currentBufferIndex] = textureValue;
 			
+			x_brush_start++;
+		}
+		y_brush_start++;
+	}
+}
+
+void BrushFunction::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtexture, const Math::float4& pos, unsigned char* destTextureBuffer, const Math::float2& destTextureSize, const float modifier)
+{
+	destTexWidth = (int)destTextureSize.x();
+	destTexHeight = (int)destTextureSize.y();
+	CalculateRegionToUpdate(pos, destTexWidth, destTexHeight, Terrain::BrushTool::Instance()->GetRadius());
+	strength = Terrain::BrushTool::Instance()->GetStrength();
+	maxHeight = Terrain::BrushTool::Instance()->GetMaxHeight();
+
+	//now we update only the region 
+
+	currentBrushIndex = 0;
+	x_startInit += Terrain::BrushTool::Instance()->GetCurrentChannel(); //we start att channel index;
+	for (int y_start = y_startInit; y_start < y_end; y_start++)
+	{
+		currentColBufferIndex = destTexHeight*y_start;
+		currentColBrushIndex = brushtexture->size*y_brush_start;
+		x_brush_start = x_brush_startInit;
+		for (int x_start = x_startInit; x_start < x_end; x_start+=4) //we skip to update only every fourth byte, one channel
+		{
+			currentBufferIndex = currentColBufferIndex + x_start;
+			currentBrushIndex = currentColBrushIndex + x_brush_start;
+
+			brushValue = brushtexture->sampledBrushBuffer[currentBrushIndex] / 255.f; //normalize to use as mask and to scale well with strength, brush values are from 0 - 255
+			textureValue = destTextureBuffer[currentBufferIndex];
+
+			textureValue += (strength*brushValue*modifier);
+			textureValue = Math::n_clamp(textureValue, 0.f, maxHeight);
+			destTextureBuffer[currentBufferIndex] = (unsigned char)textureValue;
+
 			x_brush_start++;
 		}
 		y_brush_start++;

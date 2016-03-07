@@ -21,7 +21,8 @@ BrushTool::BrushTool() :
 	radius(32),
 	blurPrecStrength(radius-1.f),
 	strength(10.f),
-	maxHeight(1024.f)
+	maxHeight(1024.f),
+	currentChannel(0)
 {
 	__ConstructSingleton;
 }
@@ -60,7 +61,7 @@ void BrushTool::SetRadius(int newRadius)
 {
 	if (newRadius < 1) radius = 1; //if someone has magically set radius to 0
 	else radius = newRadius;
-	brushTexture->ResampleTexture(radius * 2);
+	brushTexture->ResizeTexture(radius * 2);
 }
 
 int BrushTool::GetRadius()
@@ -84,7 +85,7 @@ void BrushTool::SetTexture(Ptr<Terrain::BrushTexture> newTexture)
 	int properBrushSize = this->radius * 2;
 	if (brushTexture->size != properBrushSize)
 	{
-		brushTexture->ResampleTexture(properBrushSize);
+		brushTexture->ResizeTexture(properBrushSize);
 	}
 }
 
@@ -94,6 +95,12 @@ void BrushTool::SetFunction(Ptr<Terrain::BrushFunction> newFunction)
 }
 
 void BrushTool::Paint(const Math::float4& pos, float* destTextureBuffer, const Math::float2& textureSize, const float modifier)
+{
+
+	function->ExecuteBrushFunction(brushTexture, pos, destTextureBuffer, textureSize, modifier);
+}
+
+void BrushTool::Paint(const Math::float4& pos, unsigned char* destTextureBuffer, const Math::float2& textureSize, const float modifier)
 {
 
 	function->ExecuteBrushFunction(brushTexture, pos, destTextureBuffer, textureSize, modifier);
@@ -109,11 +116,13 @@ void BrushTool::ActivateDefaultBrush()
 	function = brushDefaultAddRemove.cast<BrushFunction>();
 }
 
-void BrushTool::LoadBrushTextures()
+Util::Array<Ptr<Terrain::BrushTexture>>
+BrushTool::LoadBrushTextures()
 {
 	Ptr<Terrain::BrushTexture> texture = Terrain::BrushTexture::Create();
 	texture->Setup("tex:system/lightcones.dds");
 	brushTextures.Append(texture);
+	return brushTextures;
 }
 
 void BrushTool::SetMaxHeight(float newMaxHeight)
@@ -134,6 +143,22 @@ void BrushTool::SetBlurStrength(float newBlurStrength)
 float BrushTool::GetBlurStrength()
 {
 	return blurPrecStrength;
+}
+
+Util::Array<Ptr<Terrain::BrushTexture>> 
+BrushTool::GetBrushTextures()
+{
+	return brushTextures;
+}
+
+void BrushTool::SetCurrentChannel(int channel)
+{
+	currentChannel = channel;
+}
+
+int BrushTool::GetCurrentChannel()
+{
+	return currentChannel;
 }
 
 } // namespace Terrain

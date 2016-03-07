@@ -42,7 +42,7 @@ BrushSmooth::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtexture,
 	maxHeight = Terrain::BrushTool::Instance()->GetMaxHeight();
 	blurRadius = Terrain::BrushTool::Instance()->GetBlurStrength();
 
-	//now we update only the region and we clamp it if big brush is close to the border
+	//now we update only the region 
 
 	//first i will need to get the region 
 	//blur it
@@ -50,7 +50,7 @@ BrushSmooth::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtexture,
 
 	//store region
 	int diameterOfRegionToBlur = (radius * 2);
-	int regionSize = diameterOfRegionToBlur*diameterOfRegionToBlur * 4;
+	int regionSize = diameterOfRegionToBlur*diameterOfRegionToBlur * sizeof(float);
 	if (regionSize <= 0) return;
 	float * regionToBlur = (float*)Memory::Alloc(Memory::DefaultHeap, regionSize);
 
@@ -91,6 +91,82 @@ BrushSmooth::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtexture,
 			textureValue = destTextureBuffer[currentBufferIndex];
 			float interpolatedValue = Math::n_lerp(textureValue, bluredValue, brushValue);
 			destTextureBuffer[currentBufferIndex] = interpolatedValue;
+			regionIndex++;
+			x_brush_start++;
+		}
+		y_brush_start++;
+	}
+	Memory::Free(Memory::DefaultHeap, blurredRegion);
+}
+
+void BrushSmooth::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtexture, const Math::float4& pos, unsigned char* destTextureBuffer, const Math::float2& destTextureSize, const float modifier)
+{
+	destTexWidth = (int)destTextureSize.x();
+	destTexHeight = (int)destTextureSize.y();
+	radius = Terrain::BrushTool::Instance()->GetRadius();
+	CalculateRegionToUpdate(pos, destTexWidth, destTexHeight, radius);
+	strength = Terrain::BrushTool::Instance()->GetStrength();
+	maxHeight = Terrain::BrushTool::Instance()->GetMaxHeight();
+	blurRadius = Terrain::BrushTool::Instance()->GetBlurStrength();
+
+	//now we update only the region 
+
+	//first i will need to get the region 
+	//blur it
+	//and apply
+
+	//store region
+	int diameterOfRegionToBlur = (radius * 2);
+	int regionSize = diameterOfRegionToBlur*diameterOfRegionToBlur;
+	if (regionSize <= 0) return;
+	unsigned char * regionToBlur = (unsigned char*)Memory::Alloc(Memory::DefaultHeap, regionSize);
+
+	int regionIndex = 0;
+	x_startInit += Terrain::BrushTool::Instance()->GetCurrentChannel(); //has to start at specific channel
+	for (int y_start = y_startInit; y_start < y_end; y_start++)
+	{
+		int currentColBufferIndex = destTexHeight*y_start;
+		for (int x_start = x_startInit; x_start < x_end; x_start+=4)
+		{
+			int currentBufferIndex = currentColBufferIndex + x_start;
+
+			regionToBlur[regionIndex] = destTextureBuffer[currentBufferIndex];
+			regionIndex++;
+		}
+	}
+
+	// create il image
+	ILint image = ilGenImage();
+	ilBindImage(image);
+
+	// create image
+	ILboolean result = ilTexImage(diameterOfRegionToBlur, diameterOfRegionToBlur, 1, 1, IL_RED, IL_UNSIGNED_BYTE, (ILubyte*)regionToBlur);
+
+	iluBlurGaussian(1);
+	unsigned char* blurredRegion = ilGetData();
+
+	Memory::Free(Memory::DefaultHeap, regionToBlur);
+
+	//apply the blurred data
+
+	currentBrushIndex = 0;
+	regionIndex = 0;
+	x_startInit += Terrain::BrushTool::Instance()->GetCurrentChannel(); //has to start at specific channel
+	for (int y_start = y_startInit; y_start < y_end; y_start++)
+	{
+		currentColBufferIndex = destTexHeight*y_start;
+		currentColBrushIndex = brushtexture->size*y_brush_start;
+		x_brush_start = x_brush_startInit;
+		for (int x_start = x_startInit; x_start < x_end; x_start+=4)
+		{
+			currentBufferIndex = currentColBufferIndex + x_start;
+			currentBrushIndex = currentColBrushIndex + x_brush_start;
+
+			brushValue = brushtexture->sampledBrushBuffer[currentBrushIndex] / 255.f; //normalize to use as mask, brush values are from 0 - 255
+			float bluredValue = blurredRegion[regionIndex];
+			textureValue = destTextureBuffer[currentBufferIndex];
+			float interpolatedValue = Math::n_lerp(textureValue, bluredValue, brushValue);
+			destTextureBuffer[currentBufferIndex] = (unsigned char)interpolatedValue;
 			regionIndex++;
 			x_brush_start++;
 		}

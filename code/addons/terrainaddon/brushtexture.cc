@@ -38,7 +38,7 @@ void
 	ILenum imageFormat;
 	imageFormat = IL_DDS;
 	ConvertTexture(texture->GetTexture(), imageFormat);
-	ResampleTexture(size);
+	ResizeTexture(size);
 }
 
 //------------------------------------------------------------------------------
@@ -105,7 +105,7 @@ void BrushTexture::ConvertTexture(const Ptr<CoreGraphics::Texture>& tex, ILenum 
 	ilDeleteImage(image);
 }
 
-void BrushTexture::ResampleTexture(const int newSize)
+void BrushTexture::ResizeTexture(const int newSize)
 {
 	//create il image
 	ILint image = ilGenImage();
@@ -124,6 +124,11 @@ void BrushTexture::ResampleTexture(const int newSize)
 	ilDeleteImage(image);
 
 	size = newSize;
+}
+
+Ptr<Resources::ManagedTexture> BrushTexture::GetManagedTexture()
+{
+	return texture;
 }
 
 } // namespace Terrain

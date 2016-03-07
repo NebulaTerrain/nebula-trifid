@@ -19,10 +19,12 @@
 #include <QDoubleSpinBox>
 #include <QSpinBox>
 #include <QCheckBox>
+#include <QRadioButton>
 #include "models/nodes/statenodeinstance.h"
 #include "n3util/n3modeldata.h"
 #include "ui_saveresourcedialog.h"
 #include "terrainaddon/terrainaddon.h"
+#include "materials/material.h"
 
 namespace Widgets
 {
@@ -95,6 +97,8 @@ private slots:
 
 	void UpdateBrushMaxHeight(double maxHeight);
 
+	void SwitchChannel();
+
     /// called whenever a material is selected
     void MaterialSelected(const QString& material);
     /// called whenever the material info button is clicked
@@ -143,6 +147,10 @@ protected:
     /// setup material variables and textures
     void MakeMaterialUI(QComboBox* materialBox, QPushButton* materialHelp);
 
+	void MakeBrushTexturesUI();
+
+	void MakeMaterialChannels();
+
     /// get material variables which are textures
     Util::Array<Materials::Material::MaterialParameter> GetTextures(const Ptr<Materials::Material>& mat);
     /// get material variables which aren't textures
@@ -169,6 +177,7 @@ private:
 	Ptr<Terrain::TerrainAddon> terrainAddon;
 
     QVBoxLayout* mainLayout;
+	QVBoxLayout* brushesLayout;
     QComboBox* materialBox;
     QPushButton* materialHelp;
 
@@ -180,6 +189,8 @@ private:
     QMap<QLineEdit*, uint> textureTextMap;
     QMap<QPushButton*, uint> textureImgMap;
     QMap<QLabel*, uint> textureLabelMap;
+	QMap<QRadioButton*, uint> textureRadioMap;
+	QRadioButton* heightMapRadio;
 
     // label of variable (generic)
     QMap<QLabel*, uint> variableLabelMap;
@@ -268,6 +279,7 @@ TerrainHandler::SetUI(Ui::TerrainWidget* ui)
 	connect(this->ui->maxHeight_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(VariableFloatSliderChanged())); 
 	connect(this->ui->maxHeight_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateBrushMaxHeight(double))); 
 	sliderToDoubleSpinMap[this->ui->maxHeight_horizontalSlider] = this->ui->maxHeight_doubleSpinBox;
+
 
 	// setup terrain
 	this->terrainAddon = Terrain::TerrainAddon::Create();

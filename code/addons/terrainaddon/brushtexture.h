@@ -32,7 +32,8 @@ public:
 	void Discard();
 		
 	unsigned char* sampledBrushBuffer;
-	void ResampleTexture(const int newSize);
+	void ResizeTexture(const int newSize);
+	Ptr<Resources::ManagedTexture> GetManagedTexture();
 	int size;
 private:
 		
