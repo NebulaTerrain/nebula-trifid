@@ -172,7 +172,8 @@ void BrushSmooth::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtex
 		}
 		y_brush_start++;
 	}
-	Memory::Free(Memory::DefaultHeap, blurredRegion);
+
+	ilDeleteImage(image);
 }
 
 //linear time gaussian blur

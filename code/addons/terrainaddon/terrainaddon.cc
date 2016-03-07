@@ -55,7 +55,7 @@ TerrainAddon::Setup(Ptr<Graphics::ModelEntity> modelEntity)
 
 	InitializeTexture();
 
-	//CreateMaskTexutre("TextureMask_1");
+	CreateMaskTexutre("TextureMask_1");
 
 	UpdateTexture();
 

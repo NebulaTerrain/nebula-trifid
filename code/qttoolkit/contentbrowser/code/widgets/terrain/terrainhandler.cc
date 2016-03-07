@@ -1963,7 +1963,7 @@ void TerrainHandler::MakeMaterialChannels()
 		if (temp != "TextureMask")
 		{
 			QRadioButton * texRadioButton = new QRadioButton();
-			this->textureRadioMap[texRadioButton] = i;
+			this->textureRadioMap[texRadioButton] = textureRadioMap.size();
 
 			connect(texRadioButton, SIGNAL(clicked()), this, SLOT(SwitchChannel()));
 
