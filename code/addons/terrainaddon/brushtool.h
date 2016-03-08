@@ -37,7 +37,7 @@ public:
 	void SetMaxHeight(float newMaxHeight);
 	float GetMaxHeight();
 	void SetBlurStrength(float newBlurStrength);
-	float GetBlurStrength();
+	float GetBlurRadius();
 	void SetTexture(Ptr<Terrain::BrushTexture> newTexture);
 	void SetFunction(Ptr<Terrain::BrushFunction> newFunction);
 	void ActivateSmoothBrush();

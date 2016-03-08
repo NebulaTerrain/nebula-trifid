@@ -79,6 +79,8 @@ void BrushFunction::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brusht
 	currentBrushIndex = 0;
 	//start and ends are ranges of pixels
 	currentChannel = Terrain::BrushTool::Instance()->GetCurrentChannel();
+	//get index offset to the first value based on the current channel we need that to normalize the values
+	int offset = currentChannel - 4;
 	for (int y_start = y_startInit; y_start < y_end; y_start++)
 	{
 		currentColBufferIndex = destTexHeight*y_start * 4; //length of column * current number of column * number of bytes per pixel -> we get current column index in buffer
@@ -95,7 +97,11 @@ void BrushFunction::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brusht
 			textureValue += (strength*brushValue*modifier);
 			textureValue = Math::n_clamp(textureValue, 0.f, 255.f);
 			destTextureBuffer[currentBufferIndex] = (unsigned char)textureValue;
-
+			Math::float4 normalized = Math::float4::normalize(Math::float4((float)(destTextureBuffer[currentBufferIndex + offset]), (float)(destTextureBuffer[currentBufferIndex + offset + 1]), (float)(destTextureBuffer[currentBufferIndex + offset + 2]), (float)(destTextureBuffer[currentBufferIndex + offset + 3])));
+			destTextureBuffer[currentBufferIndex + offset] = (unsigned char)(normalized.x() * 255.f);
+			destTextureBuffer[currentBufferIndex + offset + 1] = (unsigned char)(normalized.y() * 255.f);
+			destTextureBuffer[currentBufferIndex + offset + 2] = (unsigned char)(normalized.z() * 255.f);
+			destTextureBuffer[currentBufferIndex + offset + 3] = (unsigned char)(normalized.w() * 255.f);
 			x_brush_start++;
 		}
 		y_brush_start++;

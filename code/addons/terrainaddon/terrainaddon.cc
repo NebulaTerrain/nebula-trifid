@@ -369,14 +369,37 @@ TerrainAddon::UpdateHeightMultiplier(float multiplier)
 }
 
 void 
-TerrainAddon::FlattenTerrain(float newTerrainHeight)
+TerrainAddon::FillChannel(float newValue)
 {
-	int frameSize = heightMapWidth*heightMapHeight;
-	for (int i = 0; i < frameSize; i++)
+	if (currentChannel == InvalidIndex)
 	{
-		rHeightBuffer[i] = newTerrainHeight;
+		int frameSize = heightMapWidth*heightMapHeight;
+		for (int i = 0; i < frameSize; i++)
+		{
+			rHeightBuffer[i] = newValue;
+		}
+		memoryHeightTexture->Update(rHeightBuffer, frameSize*sizeof(float), heightMapWidth, heightMapHeight, 0, 0, 0);
 	}
-	memoryHeightTexture->Update(rHeightBuffer, frameSize*sizeof(float), heightMapWidth, heightMapHeight, 0, 0, 0);
+	else
+	{
+		int frameSize = heightMapWidth* heightMapHeight * 4;
+		for (int i = currentChannel; i < frameSize; i += 4)
+		{
+			currentBuffer[i] = (unsigned char)Math::n_clamp(newValue, 0.f, 255.f);
+		}
+		currentTexture->Update(currentBuffer, heightMapWidth*heightMapHeight*sizeof(float), heightMapWidth, heightMapHeight, 0, 0, 0);
+	}
+}
+
+
+void TerrainAddon::FullBlurCurrentChannel()
+{
+	brushTool->ActivateSmoothBrush();
+	int prevRadius = brushTool->GetRadius();
+	brushTool->SetRadius(heightMapWidth/2);
+	UpdateTerrainAtPos(Math::float4(heightMapWidth / 2.f, 0, heightMapWidth / 2.f, 1.f), 1.f);
+	brushTool->SetRadius(prevRadius);
+	brushTool->ActivateDefaultBrush();
 }
 
 void 
@@ -451,7 +474,12 @@ void TerrainAddon::UpdateMasks()
 		SizeT frameSize = (this->heightMapWidth) * (this->heightMapHeight)*4; //4 channels 1 byte per channel - 8 bit
 		maskBuffers[i] = (unsigned char*)Memory::Alloc(Memory::DefaultHeap, frameSize);
 		Memory::Clear(maskBuffers[i], frameSize);
-
+		//for normalizing to work at least one channel has to be set to 255
+		//int channelToSetMaskToOne = 0;
+		//for (int j = 0; j < frameSize; j+=4)
+		//{
+		//	maskBuffers[i][j + channelToSetMaskToOne] = 255;
+		//}
 		Ptr<CoreGraphics::MemoryTextureLoader> loader = CoreGraphics::MemoryTextureLoader::Create();
 		loader->SetImageBuffer(maskBuffers[i], this->heightMapWidth, this->heightMapHeight, CoreGraphics::PixelFormat::SRGBA8);
 		maskTextures[i]->SetLoader(loader.upcast<Resources::ResourceLoader>());

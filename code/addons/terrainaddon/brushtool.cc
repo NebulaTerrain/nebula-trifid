@@ -137,12 +137,12 @@ float BrushTool::GetMaxHeight()
 
 void BrushTool::SetBlurStrength(float newBlurStrength)
 {
-	blurPrecStrength = (radius-1)*newBlurStrength;
+	blurPrecStrength = newBlurStrength;
 }
 
-float BrushTool::GetBlurStrength()
+float BrushTool::GetBlurRadius()
 {
-	return blurPrecStrength;
+	return (radius - 1)*blurPrecStrength;
 }
 
 Util::Array<Ptr<Terrain::BrushTexture>> 

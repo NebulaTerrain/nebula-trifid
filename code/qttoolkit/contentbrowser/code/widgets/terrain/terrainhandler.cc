@@ -1739,10 +1739,9 @@ void TerrainHandler::GenerateTerrain()
 
 }
 
-void TerrainHandler::FlattenTerrain()
+void TerrainHandler::FillChannel()
 {
-	terrainAddon->FlattenTerrain(ui->heightScale_doubleSpinBox->value());
-	this->ui->heightScale_horizontalSlider->setValue(100);
+	terrainAddon->FillChannel((float)ui->strength_doubleSpinBox->value());
 }
 
 void TerrainHandler::ApplyHeightMultiplier()
@@ -1757,9 +1756,9 @@ void TerrainHandler::UpdateHeightMultiplier(double multiplier)
 	terrainAddon->UpdateHeightMultiplier((float)multiplier);
 }
 
-void TerrainHandler::BlurTerrain()
+void TerrainHandler::BlurCurrentChannel()
 {
-	//terrainAddon->BlurTerrain(this->ui->fullBlurStrength_spinBox->value());
+	terrainAddon->FullBlurCurrentChannel();
 }
 
 void TerrainHandler::UpdateBrushStrength(double strength)
@@ -1771,7 +1770,6 @@ void TerrainHandler::UpdateBrushStrength(double strength)
 void TerrainHandler::UpdateBrushRadius()
 {
 	terrainAddon->GetBrushTool()->SetRadius(this->ui->radius_spinBox->value());
-	terrainAddon->GetBrushTool()->SetBlurStrength((float)this->ui->blurStrength_doubleSpinBox->value());
 }
 
 void TerrainHandler::UpdateBrushBlurStrength(double blurStrength)

@@ -80,14 +80,14 @@ private slots:
 
 	void GenerateTerrain();
 
-	void FlattenTerrain();
+	void FillChannel();
 
 	void ApplyHeightMultiplier();
 
 	/// called whenever height scale slider is changed
 	void UpdateHeightMultiplier(double multiplier);
 
-	void BlurTerrain();
+	void BlurCurrentChannel();
 
 	void UpdateBrushStrength(double strength);
 
@@ -174,6 +174,7 @@ private:
 
 	bool eventFilter(QObject *obj, QEvent *ev);
 	
+
 	Ptr<Terrain::TerrainAddon> terrainAddon;
 
     QVBoxLayout* mainLayout;
@@ -259,10 +260,10 @@ TerrainHandler::SetUI(Ui::TerrainWidget* ui)
 	connect(this->ui->heightScale_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateHeightMultiplier(double))); //visual & update
 	sliderToDoubleSpinMap[this->ui->heightScale_horizontalSlider] = this->ui->heightScale_doubleSpinBox;
 	
-	connect(this->ui->flattenHeightMap_pushButton, SIGNAL(clicked()), this, SLOT(FlattenTerrain()));
+	connect(this->ui->fillChannel_pushButton, SIGNAL(clicked()), this, SLOT(FillChannel()));
 	connect(this->ui->applyScale_pushButton, SIGNAL(clicked()), this, SLOT(ApplyHeightMultiplier()));
 	
-	connect(this->ui->fullBlurHeightMap_pushButton, SIGNAL(clicked()), this, SLOT(BlurTerrain()));
+	connect(this->ui->blurChannel_pushButton, SIGNAL(clicked()), this, SLOT(BlurCurrentChannel()));
 
 	connect(this->ui->strength_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(VariableFloatSliderChanged()));
 	connect(this->ui->strength_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateBrushStrength(double)));
@@ -279,7 +280,6 @@ TerrainHandler::SetUI(Ui::TerrainWidget* ui)
 	connect(this->ui->maxHeight_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(VariableFloatSliderChanged())); 
 	connect(this->ui->maxHeight_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateBrushMaxHeight(double))); 
 	sliderToDoubleSpinMap[this->ui->maxHeight_horizontalSlider] = this->ui->maxHeight_doubleSpinBox;
-
 
 	// setup terrain
 	this->terrainAddon = Terrain::TerrainAddon::Create();

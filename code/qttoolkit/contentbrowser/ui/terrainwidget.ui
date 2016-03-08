@@ -25,7 +25,7 @@
    <enum>QFrame::Plain</enum>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="3" column="0">
+   <item row="5" column="0">
     <widget class="QGroupBox" name="brushTextures_gridGroupBox">
      <property name="title">
       <string>Brush Textures</string>
@@ -48,7 +48,7 @@
            <x>0</x>
            <y>0</y>
            <width>365</width>
-           <height>207</height>
+           <height>221</height>
           </rect>
          </property>
          <property name="sizePolicy">
@@ -89,138 +89,6 @@
           </item>
          </layout>
         </widget>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="1" column="0">
-    <widget class="QGroupBox" name="terrainSettings_gridGroupBox">
-     <property name="title">
-      <string>Terrain Settings</string>
-     </property>
-     <layout class="QGridLayout" name="gridLayout_3">
-      <item row="3" column="1">
-       <widget class="QSlider" name="heightMapSize_horizontalSlider">
-        <property name="minimum">
-         <number>2</number>
-        </property>
-        <property name="maximum">
-         <number>4096</number>
-        </property>
-        <property name="singleStep">
-         <number>32</number>
-        </property>
-        <property name="pageStep">
-         <number>32</number>
-        </property>
-        <property name="value">
-         <number>1024</number>
-        </property>
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="heightMap_label">
-        <property name="text">
-         <string>Height Map</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="heightMapSize_label">
-        <property name="text">
-         <string>Size</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QPushButton" name="browse_pushButton">
-        <property name="text">
-         <string>Browse</string>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="1">
-       <widget class="QSlider" name="heightScale_horizontalSlider">
-        <property name="maximum">
-         <number>9999</number>
-        </property>
-        <property name="singleStep">
-         <number>100</number>
-        </property>
-        <property name="pageStep">
-         <number>100</number>
-        </property>
-        <property name="value">
-         <number>200</number>
-        </property>
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="3">
-       <widget class="QDoubleSpinBox" name="heightScale_doubleSpinBox">
-        <property name="maximum">
-         <double>999.990000000000009</double>
-        </property>
-        <property name="value">
-         <double>2.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="0">
-       <widget class="QLabel" name="heightScale_label">
-        <property name="text">
-         <string>Height Scale</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="3">
-       <widget class="QSpinBox" name="heightMapSize_spinBox">
-        <property name="minimum">
-         <number>2</number>
-        </property>
-        <property name="maximum">
-         <number>4096</number>
-        </property>
-        <property name="singleStep">
-         <number>32</number>
-        </property>
-        <property name="value">
-         <number>1024</number>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="6">
-       <widget class="QPushButton" name="applyScale_pushButton">
-        <property name="text">
-         <string>Apply</string>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="5">
-       <widget class="QPushButton" name="flattenHeightMap_pushButton">
-        <property name="text">
-         <string>Flatten</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="6">
-       <widget class="QPushButton" name="generate_pushButton">
-        <property name="text">
-         <string>Generate</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="5">
-       <widget class="QPushButton" name="new_pushButton">
-        <property name="text">
-         <string>New</string>
-        </property>
        </widget>
       </item>
      </layout>
@@ -379,23 +247,30 @@
         </property>
        </widget>
       </item>
-      <item row="5" column="0">
-       <widget class="QPushButton" name="fullBlurHeightMap_pushButton">
-        <property name="text">
-         <string>Blur Map</string>
-        </property>
-       </widget>
-      </item>
      </layout>
     </widget>
    </item>
-   <item row="4" column="0">
+   <item row="6" column="0">
     <widget class="QGroupBox" name="channels_gridGroupBox">
      <property name="title">
       <string>Channels</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_5">
       <item row="0" column="0">
+       <widget class="QPushButton" name="blurChannel_pushButton">
+        <property name="text">
+         <string>Blur Channel</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QPushButton" name="fillChannel_pushButton">
+        <property name="text">
+         <string>Fill Channel</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0" colspan="2">
        <widget class="QScrollArea" name="channels_scrollArea">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -418,7 +293,7 @@
            <x>0</x>
            <y>0</y>
            <width>365</width>
-           <height>206</height>
+           <height>192</height>
           </rect>
          </property>
          <property name="sizePolicy">
@@ -433,6 +308,131 @@
           </property>
          </layout>
         </widget>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QGroupBox" name="terrainSettings_gridGroupBox">
+     <property name="title">
+      <string>Terrain Settings</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_3">
+      <item row="3" column="1">
+       <widget class="QSlider" name="heightMapSize_horizontalSlider">
+        <property name="minimum">
+         <number>2</number>
+        </property>
+        <property name="maximum">
+         <number>4096</number>
+        </property>
+        <property name="singleStep">
+         <number>32</number>
+        </property>
+        <property name="pageStep">
+         <number>32</number>
+        </property>
+        <property name="value">
+         <number>1024</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="heightMap_label">
+        <property name="text">
+         <string>Height Map</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="heightMapSize_label">
+        <property name="text">
+         <string>Size</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QPushButton" name="browse_pushButton">
+        <property name="text">
+         <string>Browse</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QSlider" name="heightScale_horizontalSlider">
+        <property name="maximum">
+         <number>9999</number>
+        </property>
+        <property name="singleStep">
+         <number>100</number>
+        </property>
+        <property name="pageStep">
+         <number>100</number>
+        </property>
+        <property name="value">
+         <number>200</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="3">
+       <widget class="QDoubleSpinBox" name="heightScale_doubleSpinBox">
+        <property name="maximum">
+         <double>999.990000000000009</double>
+        </property>
+        <property name="value">
+         <double>2.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="heightScale_label">
+        <property name="text">
+         <string>Height Scale</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="3">
+       <widget class="QSpinBox" name="heightMapSize_spinBox">
+        <property name="minimum">
+         <number>2</number>
+        </property>
+        <property name="maximum">
+         <number>4096</number>
+        </property>
+        <property name="singleStep">
+         <number>32</number>
+        </property>
+        <property name="value">
+         <number>1024</number>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="6">
+       <widget class="QPushButton" name="generate_pushButton">
+        <property name="text">
+         <string>Generate</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="5">
+       <widget class="QPushButton" name="new_pushButton">
+        <property name="text">
+         <string>New</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="5">
+       <widget class="QPushButton" name="applyScale_pushButton">
+        <property name="text">
+         <string>Apply</string>
+        </property>
        </widget>
       </item>
      </layout>

@@ -53,11 +53,12 @@ public:
 	void UpdateTerrainAtPos(const Math::float4& pos, const float modifier);
 	void UpdateHeightMultiplier(float multiplier);
 	Ptr<Terrain::BrushTool> GetBrushTool();
-	void FlattenTerrain(float newTerrainHeight);
+	void FillChannel(float newTerrainHeight);
 	void ApplyHeightMultiplier();
+	void FullBlurCurrentChannel();
 	Ptr<Materials::SurfaceInstance> GetSurfaceInstance();
 	void CreateMaskTexutre(Util::String matVarName);
-
+	
 	void SwitchChannel(int mask, int channel);
 	void UpdateMasks();
 private:

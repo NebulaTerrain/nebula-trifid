@@ -40,7 +40,7 @@ BrushSmooth::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtexture,
 	CalculateRegionToUpdate(pos, destTexWidth, destTexHeight, radius);
 	strength = Terrain::BrushTool::Instance()->GetStrength();
 	maxHeight = Terrain::BrushTool::Instance()->GetMaxHeight();
-	blurRadius = Terrain::BrushTool::Instance()->GetBlurStrength();
+	blurRadius = Terrain::BrushTool::Instance()->GetBlurRadius();
 
 	//now we update only the region 
 
@@ -107,7 +107,7 @@ void BrushSmooth::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtex
 	CalculateRegionToUpdate(pos, destTexWidth, destTexHeight, radius);
 	strength = Terrain::BrushTool::Instance()->GetStrength();
 	maxHeight = Terrain::BrushTool::Instance()->GetMaxHeight();
-	blurRadius = Terrain::BrushTool::Instance()->GetBlurStrength();
+	blurRadius = Terrain::BrushTool::Instance()->GetBlurRadius();
 
 	//now we update only the region 
 
@@ -116,7 +116,7 @@ void BrushSmooth::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtex
 	//and apply
 
 	//store region
-	int diameterOfRegionToBlur = (radius * 2);
+	int diameterOfRegionToBlur = (radius * 2); //radius of the region we want to update
 	int regionSize = diameterOfRegionToBlur*diameterOfRegionToBlur*sizeof(float);
 	if (regionSize <= 0) return;
 	float * regionToBlur = (float*)Memory::Alloc(Memory::DefaultHeap, regionSize);
@@ -137,7 +137,7 @@ void BrushSmooth::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtex
 		}
 	}
 
-	GaussianBlur(regionToBlur, blurredRegion, diameterOfRegionToBlur, diameterOfRegionToBlur, blurRadius);
+	GaussianBlur(regionToBlur, blurredRegion, diameterOfRegionToBlur, diameterOfRegionToBlur, blurRadius); //radius used inside blur function, can be smaller than region radius, blurRadius is more like the blur strength
 	Memory::Free(Memory::DefaultHeap, regionToBlur);
 
 
@@ -145,6 +145,8 @@ void BrushSmooth::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtex
 
 	currentBrushIndex = 0;
 	regionIndex = 0;
+	//get index offset to the first value based on the current channel we need that to normalize the values
+	int offset = currentChannel - 4;
 	for (int y_start = y_startInit; y_start < y_end; y_start++)
 	{
 		currentColBufferIndex = destTexHeight*y_start * 4;
@@ -159,8 +161,12 @@ void BrushSmooth::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtex
 			float bluredValue = blurredRegion[regionIndex];
 			textureValue = destTextureBuffer[currentBufferIndex];
 			float interpolatedValue = Math::n_lerp(textureValue, bluredValue, brushValue);
-
 			destTextureBuffer[currentBufferIndex] = (unsigned char)interpolatedValue;
+			Math::float4 normalized = Math::float4::normalize(Math::float4((float)(destTextureBuffer[currentBufferIndex + offset]), (float)(destTextureBuffer[currentBufferIndex + offset + 1]), (float)(destTextureBuffer[currentBufferIndex + offset + 2]), (float)(destTextureBuffer[currentBufferIndex + offset + 3])));
+			destTextureBuffer[currentBufferIndex + offset] = (unsigned char)(normalized.x() * 255.f);
+			destTextureBuffer[currentBufferIndex + offset + 1] = (unsigned char)(normalized.y() * 255.f);
+			destTextureBuffer[currentBufferIndex + offset + 2] = (unsigned char)(normalized.z() * 255.f);
+			destTextureBuffer[currentBufferIndex + offset + 3] = (unsigned char)(normalized.w() * 255.f);
 			regionIndex++;
 			x_brush_start++;
 		}
