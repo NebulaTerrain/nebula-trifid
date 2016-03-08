@@ -456,30 +456,78 @@ TerrainHandler::VariableIntSliderDone()
 void
 TerrainHandler::VariableFloatSliderChanged()
 {
-    // get sender
-    QObject* sender = this->sender();
+	// get sender
+	QObject* sender = this->sender();
 
-    // cast to line edit
-    QSlider* slider = static_cast<QSlider*>(sender);
+	// cast to line edit
+	QSlider* slider = static_cast<QSlider*>(sender);
 
-    // get doublespinbox
-    QDoubleSpinBox* doubleSpinBox = this->sliderToDoubleSpinMap[slider];
+	// get index
+	uint index = this->variableSliderMap[slider];
+
+	// set value
+	this->surface->SetValue(this->scalarVariables[index], slider->value() / 100.0f);
+
+	// get spin box
+	QDoubleSpinBox* box = this->variableFloatValueMap.key(index);
+
+	// freeze signal from slider, set value, and unfreeze
+	box->blockSignals(true);
+	box->setValue((float)slider->value() / 100.0f);
+	box->blockSignals(false);
+
+	// update UI immediately
+	QApplication::processEvents();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TerrainHandler::VariableFloatCustomSliderChanged()
+{
+	// get sender
+	QObject* sender = this->sender();
+
+	// cast to line edit
+	QSlider* slider = static_cast<QSlider*>(sender);
+
+	// get doublespinbox
+	QDoubleSpinBox* doubleSpinBox = this->sliderToDoubleSpinMap[slider];
 
 	// set value
 	doubleSpinBox->setValue(slider->value() / 100.0f);
-   
-    //this->surface->SetValue(this->scalarVariables[index], slider->value() / 100.0f);
+}
 
-    // get spin box
-    //QDoubleSpinBox* box = this->variableFloatValueMap.key(index);
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TerrainHandler::VariableFloatFieldChanged()
+{
+	// get sender
+	QObject* sender = this->sender();
 
-    // freeze signal from slider, set value, and unfreeze
-    //box->blockSignals(true);
-    //box->setValue((float)slider->value() / 100.0f);
-    //box->blockSignals(false);
+	// cast to line edit
+	QDoubleSpinBox* box = static_cast<QDoubleSpinBox*>(sender);
 
-    // update UI immediately
-    //QApplication::processEvents();
+	// get index
+	uint index = this->variableFloatValueMap[box];
+
+	// get slider and set value
+	QSlider* slider = this->variableSliderMap.key(index);
+	if (slider)
+	{
+		slider->blockSignals(true);
+		slider->setValue(box->value() * 100);
+		slider->blockSignals(false);
+	}
+
+	// update UI
+	QApplication::processEvents();
+
+	// update float
+	this->FloatVariableChanged(index);
 }
 
 //------------------------------------------------------------------------------
@@ -536,7 +584,7 @@ TerrainHandler::VariableIntFieldChanged()
 /**
 */
 void
-TerrainHandler::VariableFloatFieldChanged()
+TerrainHandler::VariableFloatCustomFieldChanged()
 {
     // get sender
     QObject* sender = this->sender();
@@ -550,20 +598,6 @@ TerrainHandler::VariableFloatFieldChanged()
 	slider->blockSignals(true);
 	slider->setValue(box->value() * 100);
 	slider->blockSignals(false);
-    // get slider and set value
-    //QSlider* slider = this->variableSliderMap.key(index);
-    //if (slider)
-    //{
-    //   slider->blockSignals(true);
-    //    slider->setValue(box->value() * 100);
-    //    slider->blockSignals(false);
-    //}
-
-    // update UI
-    //QApplication::processEvents();
-
-    // update float
-    //this->FloatVariableChanged(index);
 }
 
 //------------------------------------------------------------------------------
@@ -1752,7 +1786,7 @@ void TerrainHandler::ApplyHeightMultiplier()
 
 void TerrainHandler::UpdateHeightMultiplier(double multiplier)
 {
-	VariableFloatFieldChanged(); //updates the slider using box value
+	VariableFloatCustomFieldChanged(); //updates the slider using box value
 	terrainAddon->UpdateHeightMultiplier((float)multiplier);
 }
 
@@ -1763,7 +1797,7 @@ void TerrainHandler::BlurCurrentChannel()
 
 void TerrainHandler::UpdateBrushStrength(double strength)
 {
-	VariableFloatFieldChanged(); //updates the slider using box value
+	VariableFloatCustomFieldChanged(); //updates the slider using box value
 	terrainAddon->GetBrushTool()->SetStrength((float)strength);
 }
 
@@ -1774,13 +1808,13 @@ void TerrainHandler::UpdateBrushRadius()
 
 void TerrainHandler::UpdateBrushBlurStrength(double blurStrength)
 {
-	VariableFloatFieldChanged();
+	VariableFloatCustomFieldChanged();
 	terrainAddon->GetBrushTool()->SetBlurStrength((float)this->ui->blurStrength_doubleSpinBox->value());
 }
 
 void TerrainHandler::UpdateBrushMaxHeight(double maxHeight)
 {
-	VariableFloatFieldChanged(); //updates the slider using box value
+	VariableFloatCustomFieldChanged(); //updates the slider using box value
 	terrainAddon->GetBrushTool()->SetMaxHeight((float)maxHeight);
 }
 
@@ -1887,7 +1921,6 @@ void TerrainHandler::MakeBrushTexturesUI()
 		//this->brushesLayout->addWidget(textureImgButton);
 		if (col == maxNumOfCol-1) row++;
 	}
-
 }
 
 void TerrainHandler::MakeMaterialChannels()
@@ -1974,6 +2007,99 @@ void TerrainHandler::MakeMaterialChannels()
 		// add layout to base layout
 		this->mainLayout->addLayout(varLayout);
 		
+	}
+
+	// add variables
+	Array<Material::MaterialParameter> vars = this->GetVariables(mat);
+	for (int i = 0; i < vars.Size(); i++)
+	{
+		// get parameter
+		Material::MaterialParameter param = vars[i];
+		Util::String temp = param.name;
+		int charIndex = temp.FindCharIndex('_');
+		if (charIndex != InvalidIndex) temp.TerminateAtIndex(charIndex);
+
+		if (temp == "Tile")
+		{
+			this->defaultValueMap[i] = param.defaultVal;
+
+			Variant min = param.min;
+			Variant max = param.max;
+
+			// get texture info
+			String name = param.name;
+			Variant var = this->surface->GetValue(param.name);
+
+			// setup label
+			QLabel* varName = new QLabel(name.AsCharPtr());
+			QFont font = varName->font();
+			font.setBold(true);
+			varName->setFont(font);
+
+			// create material instance
+			this->scalarVariables.Add(i, param.name);
+
+			if (var.GetType() == Variant::Float)
+			{
+				// create two layouts, one for the variable and one for the label
+				QHBoxLayout* varLayout = new QHBoxLayout;
+				varLayout->addWidget(varName);
+				varLayout->addStretch(100);
+
+				// create limits
+				QDoubleSpinBox* lowerLimit = new QDoubleSpinBox;
+				lowerLimit->setRange(-10000, 10000);
+				lowerLimit->setButtonSymbols(QAbstractSpinBox::NoButtons);
+				lowerLimit->setValue(min.GetFloat());
+
+				QDoubleSpinBox* upperLimit = new QDoubleSpinBox;
+				upperLimit->setRange(-10000, 10000);
+				upperLimit->setButtonSymbols(QAbstractSpinBox::NoButtons);
+				upperLimit->setValue(max.GetFloat());
+
+				varLayout->addWidget(lowerLimit);
+				connect(lowerLimit, SIGNAL(valueChanged(double)), this, SLOT(VariableFloatLimitsChanged()));
+
+				// depending on what type of resource we have, we need different handlers
+				QSlider* slider = new QSlider(Qt::Horizontal);
+				slider->setRange(min.GetFloat() * 100, max.GetFloat() * 100);
+				slider->setValue(var.GetFloat() * 100);
+				slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+				connect(slider, SIGNAL(valueChanged(int)), this, SLOT(VariableFloatSliderChanged()));
+				connect(slider, SIGNAL(sliderReleased()), this, SLOT(VariableFloatSliderDone()));
+				varLayout->addWidget(slider);
+
+				// add to registry
+				this->variableSliderMap[slider] = i;
+
+				varLayout->addWidget(upperLimit);
+				connect(upperLimit, SIGNAL(valueChanged(double)), this, SLOT(VariableFloatLimitsChanged()));
+
+				// create value representation
+				QDoubleSpinBox* box = new QDoubleSpinBox;
+				box->setRange(min.GetFloat(), max.GetFloat());
+				box->setValue(var.GetFloat());
+				box->setSingleStep(0.01f);
+				box->setFixedWidth(75);
+
+				// connect box to actual value
+				connect(box, SIGNAL(valueChanged(double)), this, SLOT(VariableFloatFieldChanged()));
+
+
+				varLayout->addWidget(box);
+
+				// add UI elements to lists
+				this->variableLabelMap[varName] = i;
+				this->variableFloatValueMap[box] = i;
+				this->lowerLimitFloatMap[lowerLimit] = i;
+				this->upperLimitFloatMap[upperLimit] = i;
+
+				// add to layout
+				if (!param.desc.IsEmpty()) varName->setToolTip(param.desc.AsCharPtr());
+				this->mainLayout->addLayout(varLayout);
+			}
+		}
 	}
 }
 

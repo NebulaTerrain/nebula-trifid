@@ -99,6 +99,9 @@ private slots:
 
 	void SwitchChannel();
 
+	void VariableFloatCustomSliderChanged();
+	void VariableFloatCustomFieldChanged();
+
     /// called whenever a material is selected
     void MaterialSelected(const QString& material);
     /// called whenever the material info button is clicked
@@ -256,7 +259,7 @@ TerrainHandler::SetUI(Ui::TerrainWidget* ui)
 	
 
 	//only enter in spinbox or sliding update the height
-	connect(this->ui->heightScale_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(VariableFloatSliderChanged())); //visual
+	connect(this->ui->heightScale_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(VariableFloatCustomSliderChanged())); //visual
 	connect(this->ui->heightScale_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateHeightMultiplier(double))); //visual & update
 	sliderToDoubleSpinMap[this->ui->heightScale_horizontalSlider] = this->ui->heightScale_doubleSpinBox;
 	
@@ -265,7 +268,7 @@ TerrainHandler::SetUI(Ui::TerrainWidget* ui)
 	
 	connect(this->ui->blurChannel_pushButton, SIGNAL(clicked()), this, SLOT(BlurCurrentChannel()));
 
-	connect(this->ui->strength_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(VariableFloatSliderChanged()));
+	connect(this->ui->strength_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(VariableFloatCustomSliderChanged()));
 	connect(this->ui->strength_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateBrushStrength(double)));
 	sliderToDoubleSpinMap[this->ui->strength_horizontalSlider] = this->ui->strength_doubleSpinBox;
 
@@ -273,11 +276,11 @@ TerrainHandler::SetUI(Ui::TerrainWidget* ui)
 	connect(this->ui->radius_spinBox, SIGNAL(valueChanged(int)), this->ui->radius_horizontalSlider, SLOT(setValue(int))); //visual
 	connect(this->ui->radius_spinBox, SIGNAL(valueChanged(int)), this, SLOT(UpdateBrushRadius()));
 
-	connect(this->ui->blurStrength_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(VariableFloatSliderChanged())); //visual
+	connect(this->ui->blurStrength_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(VariableFloatCustomSliderChanged())); //visual
 	connect(this->ui->blurStrength_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateBrushBlurStrength(double)));
 	sliderToDoubleSpinMap[this->ui->blurStrength_horizontalSlider] = this->ui->blurStrength_doubleSpinBox;
 
-	connect(this->ui->maxHeight_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(VariableFloatSliderChanged())); 
+	connect(this->ui->maxHeight_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(VariableFloatCustomSliderChanged()));
 	connect(this->ui->maxHeight_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateBrushMaxHeight(double))); 
 	sliderToDoubleSpinMap[this->ui->maxHeight_horizontalSlider] = this->ui->maxHeight_doubleSpinBox;
 

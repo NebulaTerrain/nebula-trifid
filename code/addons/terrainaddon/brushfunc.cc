@@ -95,9 +95,11 @@ void BrushFunction::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brusht
 			textureValue = destTextureBuffer[currentBufferIndex];
 
 			textureValue += (strength*brushValue*modifier);
-			textureValue = Math::n_clamp(textureValue, 0.f, 255.f);
+			//textureValue = Math::n_clamp(textureValue, 0.f, 255.f); //if we don't clamp now it will happen at the normalization anyway and this way if someone really wants to reduce/overwrite completly other channels he then can do it with one stroke at high strength
 			destTextureBuffer[currentBufferIndex] = (unsigned char)textureValue;
-			Math::float4 normalized = Math::float4::normalize(Math::float4((float)(destTextureBuffer[currentBufferIndex + offset]), (float)(destTextureBuffer[currentBufferIndex + offset + 1]), (float)(destTextureBuffer[currentBufferIndex + offset + 2]), (float)(destTextureBuffer[currentBufferIndex + offset + 3])));
+			Math::float4 allChannels((float)(destTextureBuffer[currentBufferIndex + offset]), (float)(destTextureBuffer[currentBufferIndex + offset + 1]), (float)(destTextureBuffer[currentBufferIndex + offset + 2]), (float)(destTextureBuffer[currentBufferIndex + offset + 3]));
+			allChannels[currentChannel] = textureValue;
+			Math::float4 normalized = Math::float4::normalize(allChannels);
 			destTextureBuffer[currentBufferIndex + offset] = (unsigned char)(normalized.x() * 255.f);
 			destTextureBuffer[currentBufferIndex + offset + 1] = (unsigned char)(normalized.y() * 255.f);
 			destTextureBuffer[currentBufferIndex + offset + 2] = (unsigned char)(normalized.z() * 255.f);
