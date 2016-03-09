@@ -1747,8 +1747,8 @@ void TerrainHandler::NewTerrain()
 		ui->heightMapSize_spinBox->setValue(1024);
 		ui->heightScale_doubleSpinBox->setValue(1);
 		ui->strength_doubleSpinBox->setValue(2);
-		ui->radius_spinBox->setValue(10);
-		ui->blurStrength_doubleSpinBox->setValue(1);
+		ui->radius_spinBox->setValue(64);
+		ui->blurStrength_doubleSpinBox->setValue(0.1);
 		ui->maxHeight_doubleSpinBox->setValue(1024);
 		MakeBrushTexturesUI();
 
@@ -1759,11 +1759,11 @@ void TerrainHandler::NewTerrain()
 		// create one instance so that the textures are loaded...
 		this->surfaceInstance = this->surface->CreateInstance();
 		previewState->SetSurface(this->surfaceInstance.upcast<Materials::SurfaceInstance>());
+		
 		MakeMaterialChannels();
 	}
 	int newSize = this->ui->heightMapSize_spinBox->value();
 	this->terrainAddon->UpdateTerrainWithNewSize(newSize, newSize);
-	//this->SetSurface(this->placeholderSurface->GetSurface()->CreateInstance());
 	
 	//previewState->FocusCameraOnEntity();
 }

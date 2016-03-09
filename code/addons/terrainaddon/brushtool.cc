@@ -19,7 +19,7 @@ __ImplementSingleton(Terrain::BrushTool);
 */
 BrushTool::BrushTool() : 
 	radius(32),
-	blurPrecStrength(radius-1.f),
+	blurPrecStrength(1.f),
 	strength(10.f),
 	maxHeight(1024.f),
 	currentChannel(0)
@@ -142,6 +142,7 @@ void BrushTool::SetBlurStrength(float newBlurStrength)
 
 float BrushTool::GetBlurRadius()
 {
+	//n_assert(blurPrecStrength <= 1.f);
 	return (radius - 1)*blurPrecStrength;
 }
 

@@ -49,7 +49,7 @@ public:
 
 	void UpdateTerrainWithNewSize(int width, int height);
 	void UpdateWorldSize();
-
+	void UpdateTextureSizeVariables();
 	void UpdateTerrainAtPos(const Math::float4& pos, const float modifier);
 	void UpdateHeightMultiplier(float multiplier);
 	Ptr<Terrain::BrushTool> GetBrushTool();
@@ -67,11 +67,10 @@ private:
 	struct VertexData
 	{
 		float x, z;
-		float u1, v1;
 		//float u2, v2;
 		VertexData(){}
 		//VertexData(float x1, float z1, float u_1, float v_1, float u_2, float v_2) : x(x1), z(z1), u1(u_1), v1(v_1), u2(u_2), v2(v_2)
-		VertexData(float x1, float z1, float u_1, float v_1) : x(x1), z(z1), u1(u_1), v1(v_1)
+		VertexData(float x1, float z1) : x(x1), z(z1)
 		{}
 	};
 	#pragma pack (pop) 
@@ -90,6 +89,7 @@ private:
 
 	// shader variables
 	Ptr<Materials::SurfaceConstant> heightMultiplierHandle;
+	Ptr<Materials::SurfaceConstant> terrainSizeHandle;
 	Ptr<Materials::SurfaceConstant> samplerHeightMapHandle;
 	Ptr<Materials::SurfaceConstant> transformHandle;
 	Util::Array<Ptr<Materials::SurfaceConstant>> maskHandles;

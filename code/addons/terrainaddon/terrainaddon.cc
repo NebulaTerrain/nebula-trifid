@@ -53,6 +53,8 @@ TerrainAddon::Setup(Ptr<Graphics::ModelEntity> modelEntity)
 
 	SetUpTerrainModel(modelEntity);
 
+	UpdateTextureSizeVariables();
+
 	InitializeTexture();
 
 	CreateMaskTexutre("TextureMask_1");
@@ -154,10 +156,11 @@ TerrainAddon::GetShaderVariables()
 	//get
 	this->heightMultiplierHandle = surfaceInstance->GetConstant("HeightMultiplier");
 	this->samplerHeightMapHandle = surfaceInstance->GetConstant("HeightMap");
-	
+	this->terrainSizeHandle = surfaceInstance->GetConstant("TerrainSize");
 	//set
 	this->samplerHeightMapHandle->SetTexture(this->memoryHeightTexture);
 	this->heightMultiplierHandle->SetValue((float)this->heightMultiplier);
+	this->terrainSizeHandle->SetValue((float)width);
 
 	for (int i = 0; i < maskHandles.Size(); i++)
 	{
@@ -220,7 +223,7 @@ TerrainAddon::GenerateTerrainBasedOnResolution()
 		{
 			//since i store the points column wise the next column starts at index = current column * height
 			int currentColumn = height * col;
-			vertexData.Append(VertexData((float)col, (float)row, ((float)col / (height-1.f)), ((float)row / (width-1.f)) ));
+			vertexData.Append(VertexData((float)col, (float)row));
 			//we never do the last row nor last column, we don't do that with borders since they are already a part border faces that were build in previous loop
 			if (col == width - 1 || row == height - 1) continue; //this might be more expensive than writing another for loop set just for indices
 
@@ -252,7 +255,6 @@ TerrainAddon::SetUpVBO()
 	// setup VBO
 	Util::Array<VertexComponent> components;
 	components.Append(VertexComponent(VertexComponent::Position, 0, VertexComponent::Float2, 0));
-	components.Append(VertexComponent(VertexComponent::TexCoord1, 0, VertexComponent::Float2, 0));
 	Ptr<MemoryVertexBufferLoader> vboLoader = MemoryVertexBufferLoader::Create();
 	int vertCount = vertexData.Size();
 	int sizeofstruct = sizeof(VertexData);
@@ -308,8 +310,8 @@ TerrainAddon::UpdateTerrainWithNewSize(int width, int height)
 {
 	this->width = width;
 	this->height = height;
-	this->heightMapWidth = width+1;
-	this->heightMapHeight = height+1;
+	this->terrainSizeHandle->SetValue((float)width);
+	UpdateTextureSizeVariables();
 	UpdateTerrainMesh();		
 	UpdateTexture();
 	UpdateMasks();
@@ -383,9 +385,17 @@ TerrainAddon::FillChannel(float newValue)
 	else
 	{
 		int frameSize = heightMapWidth* heightMapHeight * 4;
+		int offset = currentChannel - 4;
 		for (int i = currentChannel; i < frameSize; i += 4)
 		{
-			currentBuffer[i] = (unsigned char)Math::n_clamp(newValue, 0.f, 255.f);
+			//currentBuffer[i] = (unsigned char)Math::n_clamp(newValue, 0.f, 255.f); //this new code below is def slower but will adapt with other channels and reduce them if necessary
+			Math::float4 allChannels((float)(currentBuffer[i + offset]), (float)(currentBuffer[i + offset + 1]), (float)(currentBuffer[i + offset + 2]), (float)(currentBuffer[i + offset + 3]));
+			allChannels[currentChannel] = newValue;
+			Math::float4 normalized = Math::float4::normalize(allChannels);
+			currentBuffer[i + offset] = (unsigned char)(normalized.x() * 255.f);
+			currentBuffer[i + offset + 1] = (unsigned char)(normalized.y() * 255.f);
+			currentBuffer[i + offset + 2] = (unsigned char)(normalized.z() * 255.f);
+			currentBuffer[i + offset + 3] = (unsigned char)(normalized.w() * 255.f);
 		}
 		currentTexture->Update(currentBuffer, heightMapWidth*heightMapHeight*sizeof(float), heightMapWidth, heightMapHeight, 0, 0, 0);
 	}
@@ -489,6 +499,12 @@ void TerrainAddon::UpdateMasks()
 		n_assert(maskTextures[i]->IsLoaded());
 		maskTextures[i]->SetLoader(0);
 	}
+}
+
+void TerrainAddon::UpdateTextureSizeVariables()
+{
+	this->heightMapWidth = width + 1;
+	this->heightMapHeight = height + 1;
 }
 
 } // namespace Terrain
