@@ -89,6 +89,13 @@ void BrushTool::SetTexture(Ptr<Terrain::BrushTexture> newTexture)
 	}
 }
 
+
+void BrushTool::ChangeBrushTexture(int id)
+{
+	SetTexture(brushTextures[id]);
+}
+
+
 void BrushTool::SetFunction(Ptr<Terrain::BrushFunction> newFunction)
 {
 	function = newFunction;
@@ -120,8 +127,41 @@ Util::Array<Ptr<Terrain::BrushTexture>>
 BrushTool::LoadBrushTextures()
 {
 	Ptr<Terrain::BrushTexture> texture = Terrain::BrushTexture::Create();
-	texture->Setup("tex:system/lightcones.dds");
+	texture->Setup("tex:terrainbrushes/softcircle.dds");
 	brushTextures.Append(texture);
+
+	Ptr<Terrain::BrushTexture> texture2 = Terrain::BrushTexture::Create();
+	texture2->Setup("tex:terrainbrushes/sharpcircle.dds");
+	brushTextures.Append(texture2);
+
+	Ptr<Terrain::BrushTexture> texture3 = Terrain::BrushTexture::Create();
+	texture3->Setup("tex:terrainbrushes/square.dds");
+	brushTextures.Append(texture3);
+
+	Ptr<Terrain::BrushTexture> texture4 = Terrain::BrushTexture::Create();
+	texture4->Setup("tex:terrainbrushes/crater.dds");
+	brushTextures.Append(texture4);
+
+	Ptr<Terrain::BrushTexture> texture5 = Terrain::BrushTexture::Create();
+	texture5->Setup("tex:terrainbrushes/cracks.dds");
+	brushTextures.Append(texture5);
+
+	Ptr<Terrain::BrushTexture> texture6 = Terrain::BrushTexture::Create();
+	texture6->Setup("tex:terrainbrushes/elevation.dds");
+	brushTextures.Append(texture6);
+
+	Ptr<Terrain::BrushTexture> texture7 = Terrain::BrushTexture::Create();
+	texture7->Setup("tex:terrainbrushes/rock.dds");
+	brushTextures.Append(texture7);
+
+	Ptr<Terrain::BrushTexture> texture8 = Terrain::BrushTexture::Create();
+	texture8->Setup("tex:terrainbrushes/rocksandcracks.dds");
+	brushTextures.Append(texture8);
+
+	Ptr<Terrain::BrushTexture> texture9 = Terrain::BrushTexture::Create();
+	texture9->Setup("tex:terrainbrushes/rocksandcracks2.dds");
+	brushTextures.Append(texture9);
+
 	return brushTextures;
 }
 

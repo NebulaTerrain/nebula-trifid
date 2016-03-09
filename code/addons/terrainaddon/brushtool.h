@@ -47,6 +47,8 @@ public:
 	Util::Array<Ptr<Terrain::BrushTexture>> GetBrushTextures();
 	void SetCurrentChannel(int channel);
 	int GetCurrentChannel();
+	void ChangeBrushTexture(int id);
+
 private:
 
 	Ptr<Terrain::BrushTexture> brushTexture;

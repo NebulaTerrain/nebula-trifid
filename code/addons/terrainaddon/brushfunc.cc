@@ -80,7 +80,7 @@ void BrushFunction::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brusht
 	//start and ends are ranges of pixels
 	currentChannel = Terrain::BrushTool::Instance()->GetCurrentChannel();
 	//get index offset to the first value based on the current channel we need that to normalize the values
-	int offset = currentChannel - 4;
+	int offset = -currentChannel;
 	for (int y_start = y_startInit; y_start < y_end; y_start++)
 	{
 		currentColBufferIndex = destTexHeight*y_start * 4; //length of column * current number of column * number of bytes per pixel -> we get current column index in buffer
@@ -96,14 +96,14 @@ void BrushFunction::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brusht
 
 			textureValue += (strength*brushValue*modifier);
 			//textureValue = Math::n_clamp(textureValue, 0.f, 255.f); //if we don't clamp now it will happen at the normalization anyway and this way if someone really wants to reduce/overwrite completly other channels he then can do it with one stroke at high strength
-			destTextureBuffer[currentBufferIndex] = (unsigned char)textureValue;
+			//destTextureBuffer[currentBufferIndex] = (unsigned char)textureValue;
 			Math::float4 allChannels((float)(destTextureBuffer[currentBufferIndex + offset]), (float)(destTextureBuffer[currentBufferIndex + offset + 1]), (float)(destTextureBuffer[currentBufferIndex + offset + 2]), (float)(destTextureBuffer[currentBufferIndex + offset + 3]));
 			allChannels[currentChannel] = textureValue;
 			Math::float4 normalized = Math::float4::normalize(allChannels);
 			destTextureBuffer[currentBufferIndex + offset] = (unsigned char)(normalized.x() * 255.f);
 			destTextureBuffer[currentBufferIndex + offset + 1] = (unsigned char)(normalized.y() * 255.f);
 			destTextureBuffer[currentBufferIndex + offset + 2] = (unsigned char)(normalized.z() * 255.f);
-			destTextureBuffer[currentBufferIndex + offset + 3] = (unsigned char)(normalized.w() * 255.f);
+			destTextureBuffer[currentBufferIndex + offset + 3] = (unsigned char)(Math::n_clamp(normalized.w(),0.f,1.f) * 255.f);//for some reason component w explodes sometimes
 			x_brush_start++;
 		}
 		y_brush_start++;

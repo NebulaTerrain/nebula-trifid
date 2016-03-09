@@ -128,7 +128,7 @@ Ptr<Graphics::ModelEntity>
 TerrainAddon::CreateTerrainEntity()
 {
 	this->terrainModelEnt = ModelEntity::Create();
-	this->terrainModelEnt->SetResourceId(ResourceId("mdl:system/terrainPlane.n3"));
+	this->terrainModelEnt->SetResourceId(ResourceId("mdl:terrainmesh/plane.n3"));
 	this->terrainModelEnt->SetLoadSynced(true);
 	return terrainModelEnt;
 }
@@ -385,7 +385,7 @@ TerrainAddon::FillChannel(float newValue)
 	else
 	{
 		int frameSize = heightMapWidth* heightMapHeight * 4;
-		int offset = currentChannel - 4;
+		int offset = -currentChannel;
 		for (int i = currentChannel; i < frameSize; i += 4)
 		{
 			//currentBuffer[i] = (unsigned char)Math::n_clamp(newValue, 0.f, 255.f); //this new code below is def slower but will adapt with other channels and reduce them if necessary
@@ -395,7 +395,7 @@ TerrainAddon::FillChannel(float newValue)
 			currentBuffer[i + offset] = (unsigned char)(normalized.x() * 255.f);
 			currentBuffer[i + offset + 1] = (unsigned char)(normalized.y() * 255.f);
 			currentBuffer[i + offset + 2] = (unsigned char)(normalized.z() * 255.f);
-			currentBuffer[i + offset + 3] = (unsigned char)(normalized.w() * 255.f);
+			currentBuffer[i + offset + 3] = (unsigned char)(Math::n_clamp(normalized.w(), 0.f, 1.f) * 255.f);//for some reason component w explodes sometimes
 		}
 		currentTexture->Update(currentBuffer, heightMapWidth*heightMapHeight*sizeof(float), heightMapWidth, heightMapHeight, 0, 0, 0);
 	}
@@ -485,11 +485,11 @@ void TerrainAddon::UpdateMasks()
 		maskBuffers[i] = (unsigned char*)Memory::Alloc(Memory::DefaultHeap, frameSize);
 		Memory::Clear(maskBuffers[i], frameSize);
 		//for normalizing to work at least one channel has to be set to 255
-		//int channelToSetMaskToOne = 0;
-		//for (int j = 0; j < frameSize; j+=4)
-		//{
-		//	maskBuffers[i][j + channelToSetMaskToOne] = 255;
-		//}
+		int channelToSetMaskToOne = 0;
+		for (int j = 0; j < frameSize; j+=4)
+		{
+			maskBuffers[i][j + channelToSetMaskToOne] = 255;
+		}
 		Ptr<CoreGraphics::MemoryTextureLoader> loader = CoreGraphics::MemoryTextureLoader::Create();
 		loader->SetImageBuffer(maskBuffers[i], this->heightMapWidth, this->heightMapHeight, CoreGraphics::PixelFormat::SRGBA8);
 		maskTextures[i]->SetLoader(loader.upcast<Resources::ResourceLoader>());

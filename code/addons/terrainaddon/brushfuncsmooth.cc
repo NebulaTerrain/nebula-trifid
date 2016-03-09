@@ -146,7 +146,7 @@ void BrushSmooth::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtex
 	currentBrushIndex = 0;
 	regionIndex = 0;
 	//get index offset to the first value based on the current channel we need that to normalize the values
-	int offset = currentChannel - 4;
+	int offset = -currentChannel;
 	for (int y_start = y_startInit; y_start < y_end; y_start++)
 	{
 		currentColBufferIndex = destTexHeight*y_start * 4;

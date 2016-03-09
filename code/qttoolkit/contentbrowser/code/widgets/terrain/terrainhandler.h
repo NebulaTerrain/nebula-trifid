@@ -102,6 +102,8 @@ private slots:
 	void VariableFloatCustomSliderChanged();
 	void VariableFloatCustomFieldChanged();
 
+	void ChangeCurrentBrushTexture();
+
     /// called whenever a material is selected
     void MaterialSelected(const QString& material);
     /// called whenever the material info button is clicked
@@ -239,6 +241,7 @@ private:
 	Util::String category;
 	Util::String file;
 	QMap<QSlider*, QDoubleSpinBox*> sliderToDoubleSpinMap;
+	QMap<QPushButton*, uint> brushTexturesMap;
 };
 
 //------------------------------------------------------------------------------

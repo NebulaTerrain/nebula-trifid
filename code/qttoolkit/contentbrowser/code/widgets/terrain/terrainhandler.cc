@@ -1741,7 +1741,7 @@ void TerrainHandler::NewTerrain()
 	if (!isSetup)
 	{
 		BaseHandler::Setup();
-		previewState->SetModel(Resources::ResourceId("mdl:examples/plane.n3"));
+		previewState->SetModel(Resources::ResourceId("mdl:terrainmesh/plane.n3"));
 
 		this->terrainAddon->Setup(ContentBrowserApp::Instance()->GetPreviewState()->GetModel());
 		ui->heightMapSize_spinBox->setValue(1024);
@@ -1753,7 +1753,7 @@ void TerrainHandler::NewTerrain()
 		MakeBrushTexturesUI();
 
 		// create resource
-		this->managedSurface = Resources::ResourceManager::Instance()->CreateManagedResource(Surface::RTTI, "sur:examples/mariusz.sur", NULL, true).downcast<Materials::ManagedSurface>();
+		this->managedSurface = Resources::ResourceManager::Instance()->CreateManagedResource(Surface::RTTI, "sur:terraineditorsurfaces/mariusz.sur", NULL, true).downcast<Materials::ManagedSurface>();
 		this->surface = this->managedSurface->GetSurface().downcast<MutableSurface>();
 
 		// create one instance so that the textures are loaded...
@@ -1882,7 +1882,7 @@ void TerrainHandler::MakeBrushTexturesUI()
 	for (int i = 0; i < textures.Size(); i++)
 	{
 		col = i % maxNumOfCol;
-		
+
 		Ptr<CoreGraphics::Texture> textureObject = textures[i]->GetManagedTexture()->GetTexture();
 		String resource = textureObject->GetResourceId().AsString();
 
@@ -1890,7 +1890,7 @@ void TerrainHandler::MakeBrushTexturesUI()
 		QPushButton* textureImgButton = new QPushButton();
 
 		QPixmap pixmap;
-		
+
 		resource.ChangeAssignPrefix("tex");
 		resource.ChangeFileExtension("dds");
 		if (IO::IoServer::Instance()->FileExists(resource))
@@ -1901,19 +1901,20 @@ void TerrainHandler::MakeBrushTexturesUI()
 				pixmap.load(texFile.LocalPath().AsCharPtr());
 				int width = n_min(pixmap.width(), 512);
 				int height = n_min(pixmap.height(), 512);
-				pixmap = pixmap.scaled(QSize(24, 24), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+				pixmap = pixmap.scaled(QSize(64, 64), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 				textureImgButton->setToolTip("<html><img height=" + QString::number(height) + " width=" + QString::number(width) + " src=\"" + QString(texFile.LocalPath().AsCharPtr()) + "\"/></html>");
 			}
 		}
 
 		// connect slots
 		//connect a slot that will call to switch brushtool currentTexture to this texture
-		//connect(textureImgButton, SIGNAL(released()), this, SLOT(Browse()));
+		connect(textureImgButton, SIGNAL(clicked()), this, SLOT(ChangeCurrentBrushTexture()));
 
+		brushTexturesMap[textureImgButton] = i;
 		QPalette palette;
 		palette.setBrush(textureImgButton->backgroundRole(), QBrush(pixmap));
 		textureImgButton->setPalette(palette);
-		textureImgButton->setFixedSize(QSize(24, 24));
+		textureImgButton->setFixedSize(QSize(64, 64));
 		textureImgButton->setMask(pixmap.mask());
 		// add layout to base layout
 		QGridLayout* layout = static_cast<QGridLayout*>(this->ui->variableFrame_brushes->layout());
@@ -1921,6 +1922,18 @@ void TerrainHandler::MakeBrushTexturesUI()
 		//this->brushesLayout->addWidget(textureImgButton);
 		if (col == maxNumOfCol-1) row++;
 	}
+}
+
+void TerrainHandler::ChangeCurrentBrushTexture()
+{
+	// get sender
+	QObject* sender = this->sender();
+
+	QPushButton* brushButton = static_cast<QPushButton*>(sender);
+
+	// get index
+	uint id = this->brushTexturesMap[brushButton];
+	terrainAddon->GetBrushTool()->ChangeBrushTexture(id);
 }
 
 void TerrainHandler::MakeMaterialChannels()
@@ -2121,5 +2134,7 @@ void TerrainHandler::SwitchChannel()
 		terrainAddon->SwitchChannel(mask, channel);
 	}
 }
+
+
 
 } // namespace Widgets
