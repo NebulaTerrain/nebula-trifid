@@ -104,6 +104,9 @@ private slots:
 
 	void ChangeCurrentBrushTexture();
 
+	void SaveHeightMap();
+	void SaveMasks();
+
     /// called whenever a material is selected
     void MaterialSelected(const QString& material);
     /// called whenever the material info button is clicked
@@ -286,6 +289,8 @@ TerrainHandler::SetUI(Ui::TerrainWidget* ui)
 	connect(this->ui->maxHeight_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(VariableFloatCustomSliderChanged()));
 	connect(this->ui->maxHeight_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateBrushMaxHeight(double))); 
 	sliderToDoubleSpinMap[this->ui->maxHeight_horizontalSlider] = this->ui->maxHeight_doubleSpinBox;
+	connect(this->ui->saveHeightMap_pushButton, SIGNAL(clicked()), this, SLOT(SaveHeightMap()));
+	connect(this->ui->saveMasks_pushButton, SIGNAL(clicked()), this, SLOT(SaveMasks()));
 
 	// setup terrain
 	this->terrainAddon = Terrain::TerrainAddon::Create();

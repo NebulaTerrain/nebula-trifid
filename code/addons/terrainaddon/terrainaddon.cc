@@ -11,6 +11,7 @@
 #include "renderutil/nodelookuputil.h"
 #include "visibility/visibilityprotocol.h"
 #include "graphics/graphicsinterface.h"
+#include "coregraphics/streamtexturesaver.h"
 
 
 using namespace CoreGraphics;
@@ -505,6 +506,33 @@ void TerrainAddon::UpdateTextureSizeVariables()
 {
 	this->heightMapWidth = width + 1;
 	this->heightMapHeight = height + 1;
+}
+
+void TerrainAddon::SaveHeightMap(Util::String path)
+{
+	Ptr<CoreGraphics::StreamTextureSaver> saver = CoreGraphics::StreamTextureSaver::Create();
+	Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(path);
+	saver->SetFormat(CoreGraphics::ImageFileFormat::PNG);
+	saver->SetMipLevel(0);
+	saver->SetStream(stream);
+	memoryHeightTexture->SetSaver(saver.upcast<Resources::ResourceSaver>());
+	n_assert(memoryHeightTexture->Save());
+}
+
+void TerrainAddon::SaveMasks(Util::String path)
+{
+	for (int i = 0; i < maskTextures.Size(); i++)
+	{
+		Util::String resName = Util::String::Sprintf("%s%d.png", path.AsCharPtr(), i+1);
+		Ptr<CoreGraphics::StreamTextureSaver> saver = CoreGraphics::StreamTextureSaver::Create();
+		Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(resName);
+		saver->SetFormat(CoreGraphics::ImageFileFormat::PNG);
+		saver->SetMipLevel(0);
+		saver->SetStream(stream);
+		maskTextures[i]->SetSaver(saver.upcast<Resources::ResourceSaver>());
+		n_assert(maskTextures[i]->Save());
+	}
+	
 }
 
 } // namespace Terrain

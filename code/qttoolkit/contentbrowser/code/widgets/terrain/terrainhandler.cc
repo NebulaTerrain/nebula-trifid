@@ -1764,7 +1764,7 @@ void TerrainHandler::NewTerrain()
 	}
 	int newSize = this->ui->heightMapSize_spinBox->value();
 	this->terrainAddon->UpdateTerrainWithNewSize(newSize, newSize);
-	
+
 	//previewState->FocusCameraOnEntity();
 }
 
@@ -1934,6 +1934,48 @@ void TerrainHandler::ChangeCurrentBrushTexture()
 	// get index
 	uint id = this->brushTexturesMap[brushButton];
 	terrainAddon->GetBrushTool()->ChangeBrushTexture(id);
+}
+
+void TerrainHandler::SaveHeightMap()
+{
+	if (this->category.IsEmpty() || this->file.IsEmpty())
+	{
+		if (this->saveDialog.exec() == QDialog::Accepted)
+		{
+			this->category = this->saveDialogUi.categoryBox->currentText().toUtf8().constData();
+			this->file = this->saveDialogUi.nameEdit->text().toUtf8().constData();
+		}
+		else
+		{
+			// just abort
+			return;
+		}
+	}
+
+	
+	String resName = String::Sprintf("src:assets/%s/%s.png", this->category.AsCharPtr(), this->file.AsCharPtr());
+	terrainAddon->SaveHeightMap(resName);
+}
+
+void TerrainHandler::SaveMasks()
+{
+	if (this->category.IsEmpty() || this->file.IsEmpty())
+	{
+		if (this->saveDialog.exec() == QDialog::Accepted)
+		{
+			this->category = this->saveDialogUi.categoryBox->currentText().toUtf8().constData();
+			this->file = this->saveDialogUi.nameEdit->text().toUtf8().constData();
+		}
+		else
+		{
+			// just abort
+			return;
+		}
+	}
+
+
+	String resName = String::Sprintf("src:assets/%s/%s", this->category.AsCharPtr(), this->file.AsCharPtr());
+	terrainAddon->SaveMasks(resName);
 }
 
 void TerrainHandler::MakeMaterialChannels()

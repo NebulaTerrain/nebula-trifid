@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>407</width>
+    <width>418</width>
     <height>795</height>
    </rect>
   </property>
@@ -47,8 +47,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>365</width>
-           <height>221</height>
+           <width>376</width>
+           <height>207</height>
           </rect>
          </property>
          <property name="sizePolicy">
@@ -256,21 +256,21 @@
       <string>Channels</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_5">
-      <item row="0" column="0">
+      <item row="1" column="0">
        <widget class="QPushButton" name="blurChannel_pushButton">
         <property name="text">
          <string>Blur Channel</string>
         </property>
        </widget>
       </item>
-      <item row="0" column="1">
+      <item row="1" column="1">
        <widget class="QPushButton" name="fillChannel_pushButton">
         <property name="text">
          <string>Fill Channel</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="0" colspan="2">
+      <item row="2" column="0" colspan="2">
        <widget class="QScrollArea" name="channels_scrollArea">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -292,8 +292,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>365</width>
-           <height>192</height>
+           <width>376</width>
+           <height>177</height>
           </rect>
          </property>
          <property name="sizePolicy">
@@ -432,6 +432,20 @@
        <widget class="QPushButton" name="applyScale_pushButton">
         <property name="text">
          <string>Apply</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0">
+       <widget class="QPushButton" name="saveHeightMap_pushButton">
+        <property name="text">
+         <string>Save Height</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="1">
+       <widget class="QPushButton" name="saveMasks_pushButton">
+        <property name="text">
+         <string>Save Masks</string>
         </property>
        </widget>
       </item>

@@ -61,6 +61,10 @@ public:
 	
 	void SwitchChannel(int mask, int channel);
 	void UpdateMasks();
+
+	void SaveHeightMap(Util::String path);
+	void SaveMasks(Util::String path);
+
 private:
 	#pragma pack (push)
 	#pragma pack(1)
