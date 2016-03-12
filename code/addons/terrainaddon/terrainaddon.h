@@ -4,6 +4,7 @@
 @class Terrain::TerrainAddon
 
 Renders terrain with specified resolution based on height-map
+Holds and updates height map texture and texture masks aka blend masks
 
 (C) 2016 Individual contributors, see AUTHORS file
 */
@@ -41,7 +42,6 @@ public:
 	void SetUpVBO();
 	void InitializeTexture();
 	void UpdateTexture();
-	void UpdateTexture(void* data, SizeT size, SizeT width, SizeT height, IndexT left, IndexT top, IndexT mip);
 	void SetUpTerrainModel(Ptr<Graphics::ModelEntity> modelEntity);
 	Ptr<Graphics::ModelEntity> CreateTerrainEntity();
 	Ptr<Graphics::ModelEntity> GetTerrainEntity();
@@ -100,7 +100,7 @@ private:
 	Util::Array<Util::String> maskVarNames;
 
 	Ptr<CoreGraphics::Texture> currentTexture;
-	unsigned char *currentBuffer;
+	void *currentBuffer;
 	int currentChannel;
 
 	Ptr<CoreGraphics::Texture> memoryHeightTexture;

@@ -121,7 +121,7 @@ TerrainAddon::UpdateTexture()
 	n_assert(this->memoryHeightTexture->IsLoaded());
 	this->memoryHeightTexture->SetLoader(0);
 
-	currentBuffer = (unsigned char*)rHeightBuffer;
+	currentBuffer = rHeightBuffer;
 }
 
 
@@ -286,12 +286,6 @@ TerrainAddon::SetUpVBO()
 	primitive.SetPrimitiveTopology(PrimitiveTopology::TriangleList);
 	primitiveGroups.Append(primitive);
 }
-
-void 
-TerrainAddon::UpdateTexture(void* data, SizeT size, SizeT width, SizeT height, IndexT left, IndexT top, IndexT mip)
-{
-	this->memoryHeightTexture->Update(data, size, heightMapWidth, heightMapHeight, left, top, mip);
-}
 	
 
 Ptr<Graphics::ModelEntity> 
@@ -343,19 +337,15 @@ TerrainAddon::UpdateWorldSize()
 void 
 TerrainAddon::UpdateTerrainAtPos(const Math::float4& pos, const float modifier)
 {
-	//n_printf("\nmousePos %f %f\n", pos.x(), pos.z());
-	if (currentChannel == InvalidIndex)
+	if (currentChannel == InvalidIndex) //height map has different pixel format than texture masks
 	{
-		brushTool->Paint(pos, (float*)currentBuffer, float2((float)heightMapWidth, (float)heightMapHeight), modifier);
-		currentTexture->Update((float*)currentBuffer, heightMapWidth*heightMapHeight*sizeof(float), heightMapWidth, heightMapHeight, 0, 0, 0);
-		//brushTool->Paint(pos, rHeightBuffer, float2((float)heightMapWidth, (float)heightMapHeight), modifier);
-		//memoryHeightTexture->Update(rHeightBuffer, heightMapWidth*heightMapHeight*sizeof(float), heightMapWidth, heightMapHeight, 0, 0, 0);
+		brushTool->GetCurrentBrushFunction()->ExecuteBrushFunction(float2(pos.x(),pos.z()), (float*)currentBuffer, float2((float)heightMapWidth, (float)heightMapHeight), modifier);
 	}
 	else
 	{
-		brushTool->Paint(pos, currentBuffer, float2((float)heightMapWidth, (float)heightMapHeight), modifier);
-		currentTexture->Update(currentBuffer, heightMapWidth*heightMapHeight*sizeof(float), heightMapWidth, heightMapHeight, 0, 0, 0);
+		brushTool->GetCurrentBrushFunction()->ExecuteBrushFunction(float2(pos.x(), pos.z()), (unsigned char*)currentBuffer, float2((float)heightMapWidth, (float)heightMapHeight), modifier);
 	}
+	currentTexture->Update(currentBuffer, 0, heightMapWidth, heightMapHeight, 0, 0, 0);
 }
 
 Ptr<Terrain::BrushTool> 
@@ -381,25 +371,26 @@ TerrainAddon::FillChannel(float newValue)
 		{
 			rHeightBuffer[i] = newValue;
 		}
-		memoryHeightTexture->Update(rHeightBuffer, frameSize*sizeof(float), heightMapWidth, heightMapHeight, 0, 0, 0);
 	}
 	else
 	{
-		int frameSize = heightMapWidth* heightMapHeight * 4;
+		int numberOfChannels = 4;
+		int frameSize = heightMapWidth* heightMapHeight * numberOfChannels;
 		int offset = -currentChannel;
-		for (int i = currentChannel; i < frameSize; i += 4)
+		unsigned char* castBuffer = (unsigned char*)currentBuffer;
+		for (int i = currentChannel; i < frameSize; i += numberOfChannels)
 		{
 			//currentBuffer[i] = (unsigned char)Math::n_clamp(newValue, 0.f, 255.f); //this new code below is def slower but will adapt with other channels and reduce them if necessary
-			Math::float4 allChannels((float)(currentBuffer[i + offset]), (float)(currentBuffer[i + offset + 1]), (float)(currentBuffer[i + offset + 2]), (float)(currentBuffer[i + offset + 3]));
+			Math::float4 allChannels((float)(castBuffer[i + offset]), (float)(castBuffer[i + offset + 1]), (float)(castBuffer[i + offset + 2]), (float)(castBuffer[i + offset + 3]));
 			allChannels[currentChannel] = newValue;
 			Math::float4 normalized = Math::float4::normalize(allChannels);
-			currentBuffer[i + offset] = (unsigned char)(normalized.x() * 255.f);
-			currentBuffer[i + offset + 1] = (unsigned char)(normalized.y() * 255.f);
-			currentBuffer[i + offset + 2] = (unsigned char)(normalized.z() * 255.f);
-			currentBuffer[i + offset + 3] = (unsigned char)(Math::n_clamp(normalized.w(), 0.f, 1.f) * 255.f);//for some reason component w explodes sometimes
+			castBuffer[i + offset] = (unsigned char)(normalized.x() * 255.f);
+			castBuffer[i + offset + 1] = (unsigned char)(normalized.y() * 255.f);
+			castBuffer[i + offset + 2] = (unsigned char)(normalized.z() * 255.f);
+			castBuffer[i + offset + 3] = (unsigned char)(Math::n_clamp(normalized.w(), 0.f, 1.f) * 255.f);//for some reason component w explodes sometimes
 		}
-		currentTexture->Update(currentBuffer, heightMapWidth*heightMapHeight*sizeof(float), heightMapWidth, heightMapHeight, 0, 0, 0);
 	}
+	currentTexture->Update(currentBuffer, 0, heightMapWidth, heightMapHeight, 0, 0, 0);
 }
 
 
@@ -421,7 +412,7 @@ TerrainAddon::ApplyHeightMultiplier()
 	{
 		rHeightBuffer[i] *= heightMultiplier;
 	}
-	memoryHeightTexture->Update(rHeightBuffer, frameSize*sizeof(float), heightMapWidth, heightMapHeight, 0, 0, 0);
+	currentTexture->Update(currentBuffer, 0, heightMapWidth, heightMapHeight, 0, 0, 0);
 }
 
 void 
@@ -440,7 +431,7 @@ Ptr<Materials::SurfaceInstance> TerrainAddon::GetSurfaceInstance()
 void TerrainAddon::CreateMaskTexutre(Util::String matVarName)
 {
 	Ptr<CoreGraphics::Texture> maskTexture =  CoreGraphics::Texture::Create();
-	Util::String resName = Util::String::Sprintf("heightMapTextureMask_%d", maskTextures.Size());
+	Util::String resName = Util::String::Sprintf("heightMapTextureMask_%d", maskTextures.Size() + 1); //+ 1 just to be consistent since they are named in shader starting from 1 and saved from 1
 	maskTexture->SetResourceId(resName);
 	Resources::ResourceManager::Instance()->RegisterUnmanagedResource(maskTexture.upcast<Resources::Resource>());
 
@@ -455,11 +446,12 @@ void TerrainAddon::CreateMaskTexutre(Util::String matVarName)
 
 void TerrainAddon::SwitchChannel(int mask, int channel)
 {
-	currentChannel = channel;
+	//here current channel is used to cast currentBuffer to the right format when updating with brush check above UpdateTextureAtPos
+	currentChannel = channel; 
 	if (channel == InvalidIndex)
 	{
 		currentTexture = memoryHeightTexture;
-		currentBuffer = (unsigned char*)rHeightBuffer;
+		currentBuffer = rHeightBuffer;
 		brushTool->SetCurrentChannel(0);
 	}
 	else
@@ -482,12 +474,13 @@ void TerrainAddon::UpdateMasks()
 		Memory::Free(Memory::DefaultHeap, maskBuffers[i]);
 		maskBuffers[i] = 0;
 
-		SizeT frameSize = (this->heightMapWidth) * (this->heightMapHeight)*4; //4 channels 1 byte per channel - 8 bit
+		int numberOfChannels = 4;
+		SizeT frameSize = (this->heightMapWidth) * (this->heightMapHeight) * sizeof(unsigned char) * numberOfChannels; //4 channels 1 byte per channel - 8 bit channels
 		maskBuffers[i] = (unsigned char*)Memory::Alloc(Memory::DefaultHeap, frameSize);
 		Memory::Clear(maskBuffers[i], frameSize);
 		//for normalizing to work at least one channel has to be set to 255
 		int channelToSetMaskToOne = 0;
-		for (int j = 0; j < frameSize; j+=4)
+		for (int j = 0; j < frameSize; j += numberOfChannels)
 		{
 			maskBuffers[i][j + channelToSetMaskToOne] = 255;
 		}

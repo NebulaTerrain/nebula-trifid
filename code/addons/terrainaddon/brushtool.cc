@@ -7,6 +7,7 @@
 #include "resources\resourcemanager.h"
 #include "coregraphics\pixelformat.h"
 #include "brushtool.h"
+#include "io\ioserver.h"
 
 
 namespace Terrain
@@ -42,10 +43,10 @@ void
 	BrushTool::Setup()
 {
 	LoadBrushTextures();
-	brushSmooth = Terrain::BrushSmooth::Create();
-	brushDefaultAddRemove = Terrain::BrushFunction::Create();
+	brushFunctions.Add(Terrain::BrushFunctionType::Smooth, Terrain::BrushSmooth::Create());
+	brushFunctions.Add(Terrain::BrushFunctionType::Standard, Terrain::BrushFunction::Create());
 	SetTexture(brushTextures.Front());
-	SetFunction(brushDefaultAddRemove);
+	SetFunction(BrushFunctionType::Standard);
 }
 
 //------------------------------------------------------------------------------
@@ -96,71 +97,33 @@ void BrushTool::ChangeBrushTexture(int id)
 }
 
 
-void BrushTool::SetFunction(Ptr<Terrain::BrushFunction> newFunction)
+void BrushTool::SetFunction(BrushFunctionType type)
 {
-	function = newFunction;
-}
-
-void BrushTool::Paint(const Math::float4& pos, float* destTextureBuffer, const Math::float2& textureSize, const float modifier)
-{
-
-	function->ExecuteBrushFunction(brushTexture, pos, destTextureBuffer, textureSize, modifier);
-}
-
-void BrushTool::Paint(const Math::float4& pos, unsigned char* destTextureBuffer, const Math::float2& textureSize, const float modifier)
-{
-
-	function->ExecuteBrushFunction(brushTexture, pos, destTextureBuffer, textureSize, modifier);
+	function = brushFunctions[type];
 }
 
 void BrushTool::ActivateSmoothBrush()
 {
-	function = brushSmooth.cast<BrushFunction>();
+	function = brushFunctions[BrushFunctionType::Smooth];
 }
 
 void BrushTool::ActivateDefaultBrush()
 {
-	function = brushDefaultAddRemove.cast<BrushFunction>();
+	function = brushFunctions[BrushFunctionType::Standard];
 }
 
 Util::Array<Ptr<Terrain::BrushTexture>>
 BrushTool::LoadBrushTextures()
 {
-	Ptr<Terrain::BrushTexture> texture = Terrain::BrushTexture::Create();
-	texture->Setup("tex:terrainbrushes/softcircle.dds");
-	brushTextures.Append(texture);
+	Util::String dir = "tex:terrainbrushes/"; 
 
-	Ptr<Terrain::BrushTexture> texture2 = Terrain::BrushTexture::Create();
-	texture2->Setup("tex:terrainbrushes/sharpcircle.dds");
-	brushTextures.Append(texture2);
-
-	Ptr<Terrain::BrushTexture> texture3 = Terrain::BrushTexture::Create();
-	texture3->Setup("tex:terrainbrushes/square.dds");
-	brushTextures.Append(texture3);
-
-	Ptr<Terrain::BrushTexture> texture4 = Terrain::BrushTexture::Create();
-	texture4->Setup("tex:terrainbrushes/crater.dds");
-	brushTextures.Append(texture4);
-
-	Ptr<Terrain::BrushTexture> texture5 = Terrain::BrushTexture::Create();
-	texture5->Setup("tex:terrainbrushes/cracks.dds");
-	brushTextures.Append(texture5);
-
-	Ptr<Terrain::BrushTexture> texture6 = Terrain::BrushTexture::Create();
-	texture6->Setup("tex:terrainbrushes/elevation.dds");
-	brushTextures.Append(texture6);
-
-	Ptr<Terrain::BrushTexture> texture7 = Terrain::BrushTexture::Create();
-	texture7->Setup("tex:terrainbrushes/rock.dds");
-	brushTextures.Append(texture7);
-
-	Ptr<Terrain::BrushTexture> texture8 = Terrain::BrushTexture::Create();
-	texture8->Setup("tex:terrainbrushes/rocksandcracks.dds");
-	brushTextures.Append(texture8);
-
-	Ptr<Terrain::BrushTexture> texture9 = Terrain::BrushTexture::Create();
-	texture9->Setup("tex:terrainbrushes/rocksandcracks2.dds");
-	brushTextures.Append(texture9);
+	Util::Array<Util::String> brushList = IO::IoServer::Instance()->ListFiles(dir, "*");
+	for (int i = 0; i < brushList.Size(); i++)
+	{
+		Ptr<Terrain::BrushTexture> texture = Terrain::BrushTexture::Create();
+		texture->Setup(Util::String::Sprintf("%s%s", dir.AsCharPtr(), brushList[i].AsCharPtr()));
+		brushTextures.Append(texture);
+	}
 
 	return brushTextures;
 }
@@ -200,6 +163,16 @@ void BrushTool::SetCurrentChannel(int channel)
 int BrushTool::GetCurrentChannel()
 {
 	return currentChannel;
+}
+
+Ptr<Terrain::BrushTexture> BrushTool::GetCurrentBrushTexture()
+{
+	return brushTexture;
+}
+
+Ptr<Terrain::BrushFunction> BrushTool::GetCurrentBrushFunction()
+{
+	return function;
 }
 
 } // namespace Terrain

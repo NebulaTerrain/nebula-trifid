@@ -14,6 +14,11 @@ Brush
 
 namespace Terrain
 { 
+	enum BrushFunctionType
+	{
+		Standard,
+		Smooth
+	};
 class BrushFunction : public Core::RefCounted
 {
 	__DeclareClass(BrushFunction);
@@ -22,9 +27,10 @@ public:
 	BrushFunction();
 	/// destructor
 	virtual ~BrushFunction();
-	virtual void ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtexture, const Math::float4& pos, float* destTextureBuffer, const Math::float2& destTextureSize, const float modifier);
-	virtual void ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtexture, const Math::float4& pos, unsigned char* destTextureBuffer, const Math::float2& destTextureSize, const float modifier);
-	void CalculateRegionToUpdate(const Math::float4 &pos, const int width, const int height, const int radius);
+	virtual void ExecuteBrushFunction(const Math::float2& pos, float* destTextureBuffer, const Math::float2& destTextureSize, const float modifier);
+	virtual void ExecuteBrushFunction(const Math::float2& pos, unsigned char* destTextureBuffer, const Math::float2& destTextureSize, const float modifier);
+	virtual void ExecuteBrushFunction(const Math::float2& pos, unsigned short* destTextureBuffer, const Math::float2& destTextureSize, const float modifier);
+	void CalculateRegionToUpdate(const Math::float2 &pos, const int width, const int height, const int radius);
 	
 
 private:

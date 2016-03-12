@@ -39,11 +39,12 @@ public:
 	void SetBlurStrength(float newBlurStrength);
 	float GetBlurRadius();
 	void SetTexture(Ptr<Terrain::BrushTexture> newTexture);
-	void SetFunction(Ptr<Terrain::BrushFunction> newFunction);
+	void SetFunction(BrushFunctionType type);
+	Ptr<Terrain::BrushTexture> GetCurrentBrushTexture();
+	Ptr<Terrain::BrushFunction> GetCurrentBrushFunction();
 	void ActivateSmoothBrush();
 	void ActivateDefaultBrush();
-	void Paint(const Math::float4& pos, float* heightTextureBuffer, const Math::float2& heightTextureSize, const float modifier);
-	void Paint(const Math::float4& pos, unsigned char* heightTextureBuffer, const Math::float2& heightTextureSize, const float modifier);
+
 	Util::Array<Ptr<Terrain::BrushTexture>> GetBrushTextures();
 	void SetCurrentChannel(int channel);
 	int GetCurrentChannel();
@@ -61,8 +62,6 @@ private:
 
 	Util::Array<Ptr<Terrain::BrushTexture>> brushTextures;
 	Util::Array<Ptr<Terrain::BrushTexture>> LoadBrushTextures();
-	
-	Ptr<Terrain::BrushFunction> brushDefaultAddRemove;
-	Ptr<Terrain::BrushSmooth> brushSmooth;
+	Util::Dictionary<Terrain::BrushFunctionType, Ptr<Terrain::BrushFunction>> brushFunctions;
 };
 } // namespace Grid

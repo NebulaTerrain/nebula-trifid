@@ -32,7 +32,7 @@ BrushSmooth::~BrushSmooth()
 /**
 */
 void
-BrushSmooth::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtexture, const Math::float4& pos, float* destTextureBuffer, const Math::float2& destTextureSize, const float modifier)
+BrushSmooth::ExecuteBrushFunction(const Math::float2& pos, float* destTextureBuffer, const Math::float2& destTextureSize, const float modifier)
 {
 	destTexWidth = (int)destTextureSize.x();
 	destTexHeight = (int)destTextureSize.y();
@@ -41,7 +41,7 @@ BrushSmooth::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtexture,
 	strength = Terrain::BrushTool::Instance()->GetStrength();
 	maxHeight = Terrain::BrushTool::Instance()->GetMaxHeight();
 	blurRadius = Terrain::BrushTool::Instance()->GetBlurRadius();
-
+	Ptr<Terrain::BrushTexture> brushtexture = Terrain::BrushTool::Instance()->GetCurrentBrushTexture();
 	//now we update only the region 
 
 	//first i will need to get the region 
@@ -50,7 +50,7 @@ BrushSmooth::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtexture,
 
 	//store region
 	int diameterOfRegionToBlur = (radius * 2);
-	int regionSize = diameterOfRegionToBlur*diameterOfRegionToBlur * sizeof(float);
+	int regionSize = diameterOfRegionToBlur*diameterOfRegionToBlur * sizeof(float); //we create a float buffers to do the blurring
 	if (regionSize <= 0) return;
 	float * regionToBlur = (float*)Memory::Alloc(Memory::DefaultHeap, regionSize);
 
@@ -99,7 +99,7 @@ BrushSmooth::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtexture,
 	Memory::Free(Memory::DefaultHeap, blurredRegion);
 }
 
-void BrushSmooth::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtexture, const Math::float4& pos, unsigned char* destTextureBuffer, const Math::float2& destTextureSize, const float modifier)
+void BrushSmooth::ExecuteBrushFunction(const Math::float2& pos, unsigned char* destTextureBuffer, const Math::float2& destTextureSize, const float modifier)
 {
 	destTexWidth = (int)destTextureSize.x();
 	destTexHeight = (int)destTextureSize.y();
@@ -108,7 +108,7 @@ void BrushSmooth::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtex
 	strength = Terrain::BrushTool::Instance()->GetStrength();
 	maxHeight = Terrain::BrushTool::Instance()->GetMaxHeight();
 	blurRadius = Terrain::BrushTool::Instance()->GetBlurRadius();
-
+	Ptr<Terrain::BrushTexture> brushtexture = Terrain::BrushTool::Instance()->GetCurrentBrushTexture();
 	//now we update only the region 
 
 	//first i will need to get the region 
@@ -117,7 +117,7 @@ void BrushSmooth::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtex
 
 	//store region
 	int diameterOfRegionToBlur = (radius * 2); //radius of the region we want to update
-	int regionSize = diameterOfRegionToBlur*diameterOfRegionToBlur*sizeof(float);
+	int regionSize = diameterOfRegionToBlur*diameterOfRegionToBlur*sizeof(float); //we create a float buffers to do the blurring
 	if (regionSize <= 0) return;
 	float * regionToBlur = (float*)Memory::Alloc(Memory::DefaultHeap, regionSize);
 
@@ -125,12 +125,13 @@ void BrushSmooth::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtex
 
 	int regionIndex = 0;
 	currentChannel = Terrain::BrushTool::Instance()->GetCurrentChannel();
+	int numberOfChannels = 4; //because we copy values from a buffer that has more than 1 channel so we need to know how many values to skip at each iteration
 	for (int y_start = y_startInit; y_start < y_end; y_start++)
 	{
-		currentColBufferIndex = destTexHeight*y_start * 4;
+		currentColBufferIndex = destTexHeight*y_start * numberOfChannels;
 		for (int x_start = x_startInit; x_start < x_end; x_start++)
 		{
-			currentBufferIndex = currentColBufferIndex + x_start * 4 + currentChannel;
+			currentBufferIndex = currentColBufferIndex + x_start * numberOfChannels + currentChannel;
 
 			regionToBlur[regionIndex] = destTextureBuffer[currentBufferIndex];
 			regionIndex++;
@@ -149,12 +150,12 @@ void BrushSmooth::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtex
 	int offset = -currentChannel;
 	for (int y_start = y_startInit; y_start < y_end; y_start++)
 	{
-		currentColBufferIndex = destTexHeight*y_start * 4;
+		currentColBufferIndex = destTexHeight*y_start * numberOfChannels;
 		currentColBrushIndex = brushtexture->size*y_brush_start;
 		x_brush_start = x_brush_startInit;
 		for (int x_start = x_startInit; x_start < x_end; x_start++)
 		{
-			currentBufferIndex = currentColBufferIndex + x_start * 4 + currentChannel;
+			currentBufferIndex = currentColBufferIndex + x_start * numberOfChannels + currentChannel;
 			currentBrushIndex = currentColBrushIndex + x_brush_start;
 
 			brushValue = brushtexture->sampledBrushBuffer[currentBrushIndex] / 255.f; //normalize to use as mask, brush values are from 0 - 255
@@ -175,7 +176,75 @@ void BrushSmooth::ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtex
 	Memory::Free(Memory::DefaultHeap, blurredRegion);
 }
 
-//linear time gaussian blur
+void BrushSmooth::ExecuteBrushFunction(const Math::float2& pos, unsigned short* destTextureBuffer, const Math::float2& destTextureSize, const float modifier)
+{
+	destTexWidth = (int)destTextureSize.x();
+	destTexHeight = (int)destTextureSize.y();
+	radius = Terrain::BrushTool::Instance()->GetRadius();
+	CalculateRegionToUpdate(pos, destTexWidth, destTexHeight, radius);
+	strength = Terrain::BrushTool::Instance()->GetStrength();
+	maxHeight = Terrain::BrushTool::Instance()->GetMaxHeight();
+	blurRadius = Terrain::BrushTool::Instance()->GetBlurRadius();
+	Ptr<Terrain::BrushTexture> brushtexture = Terrain::BrushTool::Instance()->GetCurrentBrushTexture();
+	//now we update only the region 
+
+	//first i will need to get the region 
+	//blur it
+	//and apply
+
+	//store region
+	int diameterOfRegionToBlur = (radius * 2); //radius of the region we want to update
+	int regionSize = diameterOfRegionToBlur*diameterOfRegionToBlur*sizeof(float); //we create a float buffers to do the blurring
+	if (regionSize <= 0) return;
+	float * regionToBlur = (float*)Memory::Alloc(Memory::DefaultHeap, regionSize);
+
+	float* blurredRegion = (float*)Memory::Alloc(Memory::DefaultHeap, regionSize);
+
+	int regionIndex = 0;
+	for (int y_start = y_startInit; y_start < y_end; y_start++)
+	{
+		currentColBufferIndex = destTexHeight*y_start;
+		for (int x_start = x_startInit; x_start < x_end; x_start++)
+		{
+			currentBufferIndex = currentColBufferIndex + x_start;
+
+			regionToBlur[regionIndex] = destTextureBuffer[currentBufferIndex];
+			regionIndex++;
+		}
+	}
+
+	GaussianBlur(regionToBlur, blurredRegion, diameterOfRegionToBlur, diameterOfRegionToBlur, blurRadius); //radius used inside blur function, can be smaller than region radius, blurRadius is more like the blur strength
+	Memory::Free(Memory::DefaultHeap, regionToBlur);
+
+
+	//apply the blurred data
+
+	currentBrushIndex = 0;
+	regionIndex = 0;
+	for (int y_start = y_startInit; y_start < y_end; y_start++)
+	{
+		currentColBufferIndex = destTexHeight*y_start;
+		currentColBrushIndex = brushtexture->size*y_brush_start;
+		x_brush_start = x_brush_startInit;
+		for (int x_start = x_startInit; x_start < x_end; x_start++)
+		{
+			currentBufferIndex = currentColBufferIndex + x_start;
+			currentBrushIndex = currentColBrushIndex + x_brush_start;
+
+			brushValue = brushtexture->sampledBrushBuffer[currentBrushIndex] / 255.f; //normalize to use as mask, brush values are from 0 - 255
+			float bluredValue = blurredRegion[regionIndex];
+			textureValue = destTextureBuffer[currentBufferIndex];
+			float interpolatedValue = Math::n_lerp(textureValue, bluredValue, brushValue);
+			destTextureBuffer[currentBufferIndex] = (unsigned short)interpolatedValue;
+			regionIndex++;
+			x_brush_start++;
+		}
+		y_brush_start++;
+	}
+	Memory::Free(Memory::DefaultHeap, blurredRegion);
+}
+
+//linear time gaussian blur executed on float buffers
 void BrushSmooth::GaussianBlur(float* source, float* dest, const int width, const int height, const float radius)
 {
 	float* bxs = BoxesForGauss(radius, 3);

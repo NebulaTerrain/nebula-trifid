@@ -23,8 +23,9 @@ public:
 	BrushSmooth();
 	/// destructor
 	virtual ~BrushSmooth();
-	virtual void ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtexture, const Math::float4& pos, float* destTextureBuffer, const Math::float2& destTextureSize, const float modifier);
-	virtual void ExecuteBrushFunction(const Ptr<Terrain::BrushTexture> brushtexture, const Math::float4& pos, unsigned char* destTextureBuffer, const Math::float2& destTextureSize, const float modifier);
+	virtual void ExecuteBrushFunction(const Math::float2& pos, float* destTextureBuffer, const Math::float2& destTextureSize, const float modifier);
+	virtual void ExecuteBrushFunction(const Math::float2& pos, unsigned char* destTextureBuffer, const Math::float2& destTextureSize, const float modifier);
+	virtual void ExecuteBrushFunction(const Math::float2& pos, unsigned short* destTextureBuffer, const Math::float2& destTextureSize, const float modifier);
 private:
 	void GaussianBlur(float* source, float* dest, const int width, const int height, const float radius);
 	float* BoxesForGauss(float radius, int n);
