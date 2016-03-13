@@ -49,7 +49,7 @@ public:
 	void SetCurrentChannel(int channel);
 	int GetCurrentChannel();
 	void ChangeBrushTexture(int id);
-
+	Util::Array<Ptr<Terrain::BrushTexture>> LoadBrushTextures(const Util::String& dir);
 private:
 
 	Ptr<Terrain::BrushTexture> brushTexture;
@@ -61,7 +61,7 @@ private:
 	int currentChannel;
 
 	Util::Array<Ptr<Terrain::BrushTexture>> brushTextures;
-	Util::Array<Ptr<Terrain::BrushTexture>> LoadBrushTextures();
+	
 	Util::Dictionary<Terrain::BrushFunctionType, Ptr<Terrain::BrushFunction>> brushFunctions;
 };
 } // namespace Grid

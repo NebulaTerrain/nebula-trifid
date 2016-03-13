@@ -1744,7 +1744,7 @@ void TerrainHandler::NewTerrain()
 		previewState->SetModel(Resources::ResourceId("mdl:terrainmesh/plane.n3"));
 
 		this->terrainAddon->Setup(ContentBrowserApp::Instance()->GetPreviewState()->GetModel());
-		ui->heightMapSize_spinBox->setValue(1024);
+		//ui->heightMapSize_spinBox->setValue(1024);
 		ui->heightScale_doubleSpinBox->setValue(1);
 		ui->strength_doubleSpinBox->setValue(2);
 		ui->radius_spinBox->setValue(64);

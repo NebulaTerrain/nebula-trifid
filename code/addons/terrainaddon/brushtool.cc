@@ -42,7 +42,7 @@ BrushTool::~BrushTool()
 void
 	BrushTool::Setup()
 {
-	LoadBrushTextures();
+	LoadBrushTextures("tex:terrainbrushes/");
 	brushFunctions.Add(Terrain::BrushFunctionType::Smooth, Terrain::BrushSmooth::Create());
 	brushFunctions.Add(Terrain::BrushFunctionType::Standard, Terrain::BrushFunction::Create());
 	SetTexture(brushTextures.Front());
@@ -113,10 +113,8 @@ void BrushTool::ActivateDefaultBrush()
 }
 
 Util::Array<Ptr<Terrain::BrushTexture>>
-BrushTool::LoadBrushTextures()
+BrushTool::LoadBrushTextures(const Util::String& dir)
 {
-	Util::String dir = "tex:terrainbrushes/"; 
-
 	Util::Array<Util::String> brushList = IO::IoServer::Instance()->ListFiles(dir, "*");
 	for (int i = 0; i < brushList.Size(); i++)
 	{
