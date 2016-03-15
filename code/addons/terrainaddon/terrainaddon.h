@@ -28,11 +28,15 @@ public:
 
 	/// setup
 	void Setup(Ptr<Graphics::ModelEntity> modelEntity);
+	void Load(Ptr<Graphics::ModelEntity> modelEntity, Ptr<Materials::SurfaceInstance> surInst, uint numberOfMasks);
+
+	void SetSurfaceInstance(Ptr<Materials::SurfaceInstance> surInst);
+	void DiscardSurfaceInstance();
 
 	/// discard
 	void Discard();
 
-	void GetShaderVariables();
+	void UpdateShaderVariables();
 
 	void GenerateTerrainBasedOnResolution();
 	void UpdateTerrainMesh();
@@ -66,6 +70,9 @@ public:
 	void SaveMasks(Util::String path);
 
 private:
+
+	void LoadHeightMapToBuffer(const Ptr<CoreGraphics::Texture>& tex);
+	void LoadMaskToBuffer(const Ptr<CoreGraphics::Texture>& tex, uint i);
 	#pragma pack (push)
 	#pragma pack(1)
 	struct VertexData
@@ -82,6 +89,7 @@ private:
 	int width, height;
 	int heightMapWidth, heightMapHeight;
 	float heightMultiplier;
+	int terrainTextureSizeOffset; //if we want the textures to be 1 pixel larger than the grid -> set to 1
 
 	// mesh
 	Util::Array<int> indices;
@@ -112,12 +120,14 @@ private:
 	Ptr<Graphics::ModelEntity> terrainModelEnt;
 	Ptr<CoreGraphics::Mesh> terrainMesh;
 	Ptr<Materials::SurfaceInstance> surfaceInstance;
-		
+	Ptr<Materials::ManagedSurface> defaultManagedSurface;
+
 	Ptr<Models::ShapeNodeInstance> terrainShapeNodeInstance;
 	Ptr<Models::ShapeNode> terrainShapeNode;
 	Ptr<Models::Model> terrainModel;
 	Ptr<Terrain::BrushTool> brushTool;
 	Ptr<Models::ModelInstance> terrainModelInstance;
 	Math::bbox boundingBox;
+
 };
 } // namespace Grid

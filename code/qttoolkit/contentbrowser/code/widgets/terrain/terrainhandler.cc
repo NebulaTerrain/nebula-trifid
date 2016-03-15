@@ -179,10 +179,12 @@ TerrainHandler::Discard()
 	this->textureResources.Clear();
     this->textureVariables.Clear();
     this->scalarVariables.Clear();
+	this->textureMasksVarNames.Clear();
 
 	// discard surface instance
 	Ptr<PreviewState> previewState = ContentBrowserApp::Instance()->GetPreviewState();
 	previewState->DiscardSurface();
+	terrainAddon->DiscardSurfaceInstance();
 	if (this->managedSurface.isvalid())
 	{
 		this->surfaceInstance = 0;
@@ -706,7 +708,7 @@ TerrainHandler::VariableIntLimitsChanged()
 */
 void
 TerrainHandler::Save()
-{
+{	
 	if (this->category.IsEmpty() || this->file.IsEmpty())
 	{
 		if (this->saveDialog.exec() == QDialog::Accepted)
@@ -720,7 +722,25 @@ TerrainHandler::Save()
 			return;
 		}
 	}
-		
+	SaveTerrain();
+}
+
+void 
+TerrainHandler::SaveSruface()
+{
+	if (this->category.IsEmpty() || this->file.IsEmpty())
+	{
+		if (this->saveDialog.exec() == QDialog::Accepted)
+		{
+			this->category = this->saveDialogUi.categoryBox->currentText().toUtf8().constData();
+			this->file = this->saveDialogUi.nameEdit->text().toUtf8().constData();
+		}
+		else
+		{
+			// just abort
+			return;
+		}
+	}
 	// open stream to surface
 	Ptr<IO::IoServer> ioServer = IO::IoServer::Instance();
 	String resName = String::Sprintf("src:assets/%s/%s.sur", this->category.AsCharPtr(), this->file.AsCharPtr());
@@ -729,6 +749,28 @@ TerrainHandler::Save()
 	// save material
 	Ptr<StreamSurfaceSaver> saver = StreamSurfaceSaver::Create();
 	saver->SetStream(stream);
+
+	//we use mutable surface to save
+	//and we use it as well to set values
+	//let's rename the bound textures
+	String texResName = String::Sprintf("tex:%s/%s.png", this->category.AsCharPtr(), this->file.AsCharPtr());
+	Ptr<Resources::ManagedTexture> textureObject = Resources::ResourceManager::Instance()->CreateManagedResource(CoreGraphics::Texture::RTTI, texResName, NULL, true).downcast<Resources::ManagedTexture>();
+
+	Util::Variant var;
+	var.SetType(Util::Variant::Object);
+	var.SetObject(textureObject->GetTexture());
+	this->surface->SetValue("HeightMap", var);
+
+	for (int i = 0; i < this->textureMasksVarNames.Size(); i++)
+	{
+		texResName = String::Sprintf("tex:%s/%s_%d.png", this->category.AsCharPtr(), this->file.AsCharPtr(), i + 1);
+		textureObject = Resources::ResourceManager::Instance()->CreateManagedResource(CoreGraphics::Texture::RTTI, texResName, NULL, true).downcast<Resources::ManagedTexture>();
+		var.SetObject(textureObject->GetTexture());
+		this->surface->SetValue(textureMasksVarNames[i], var);
+	}
+
+	//Resources::ResourceManager::Instance()->DiscardManagedResource(textureObject.upcast<Resources::ManagedResource>());
+
 	this->surface->SetSaver(saver.upcast<Resources::ResourceSaver>());
 	if (!this->surface->Save())
 	{
@@ -736,7 +778,6 @@ TerrainHandler::Save()
 	}
 	this->surface->SetSaver(0);
 	QString label;
-	//this->ui->surfaceName->setText(label.sprintf("%s/%s", this->category.AsCharPtr(), this->file.AsCharPtr()));
 
 	// format the target where the resource will be exported to
 	String exportTarget = String::Sprintf("sur:%s/%s.sur", this->category.AsCharPtr(), this->file.AsCharPtr());
@@ -744,46 +785,27 @@ TerrainHandler::Save()
 	// create directory
 	ioServer->CreateDirectory(exportTarget.ExtractToLastSlash());
 
-	// delete edit surface
-	ioServer->DeleteFile("sur:system/editsurface.sur");
-
 	// also convert it
 	Logger logger;
 	BinaryXmlConverter converter;
 	converter.ConvertFile(resName, exportTarget, logger);
 
-	// hmm, now our managed material here will need to be updated, since we made a new material
-	Ptr<Materials::ManagedSurface> prevSurface = this->managedSurface;
-	this->managedSurface = Resources::ResourceManager::Instance()->CreateManagedResource(Surface::RTTI, exportTarget, NULL, true).downcast<Materials::ManagedSurface>();
-	this->surface = this->managedSurface->GetSurface().downcast<MutableSurface>();
-	this->surfaceInstance = this->surface->CreateInstance();
-
-	// generate thumbnail
-	resName = String::Sprintf("src:assets/%s/%s_sur.thumb", this->category.AsCharPtr(), this->file.AsCharPtr());
-
-	// get preview state
-	Ptr<PreviewState> previewState = ContentBrowserApp::Instance()->GetPreviewState();
-	previewState->SaveThumbnail(resName);
-	previewState->SetSurface(this->surfaceInstance.upcast<Materials::SurfaceInstance>());
-
-	// deallocate previous surface
-	if (prevSurface.isvalid())
-	{
-		Resources::ResourceManager::Instance()->DiscardManagedResource(prevSurface.upcast<Resources::ManagedResource>());
-	}
-
-	// also send physics update
-	Ptr<ReloadResourceIfExists> msg = ReloadResourceIfExists::Create();
-	msg->SetResourceName(exportTarget);
-	QtRemoteInterfaceAddon::QtRemoteClient::GetClient("editor")->Send(msg.upcast<Messaging::Message>());
-
 	// mark save button and flip changed bool
 	//this->ui->saveButton->setStyleSheet("background-color: rgb(4, 200, 0); color: white");
 	this->hasChanges = false;
 
-	// update thumbnail
-	this->UpdateThumbnail();
+	//we set back the shader variables to the memory textures inside the add-on
+	terrainAddon->UpdateShaderVariables();
 }
+
+
+void TerrainHandler::SaveTerrain()
+{
+	SaveHeightMap();
+	SaveMasks();
+	SaveSruface();
+}
+
 
 //------------------------------------------------------------------------------
 /**
@@ -801,69 +823,7 @@ TerrainHandler::SaveAs()
 		this->category = this->saveDialogUi.categoryBox->currentText().toUtf8().constData();
 		this->file = this->saveDialogUi.nameEdit->text().toUtf8().constData();
 
-		Ptr<IO::IoServer> ioServer = IO::IoServer::Instance();
-		String resName = String::Sprintf("src:assets/%s/%s.sur", this->category.AsCharPtr(), this->file.AsCharPtr());
-		Ptr<IO::Stream> stream = ioServer->CreateStream(resName);
-
-		// create saver and save material
-        Ptr<StreamSurfaceSaver> saver = StreamSurfaceSaver::Create();
-		saver->SetStream(stream);
-		this->surface->SetSaver(saver.upcast<Resources::ResourceSaver>());
-		if (!this->surface->Save())
-		{
-			QMessageBox::critical(NULL, "Could not save surface!", "Surface could not be saved");
-		}
-		this->surface->SetSaver(0);
-
-		// reformat label
-		QString label;
-		//this->ui->surfaceName->setText(label.sprintf("%s/%s", this->category.AsCharPtr(), this->file.AsCharPtr()));
-
-		// format the target where the resource will be exported to
-		String exportTarget = String::Sprintf("sur:%s/%s.sur", this->category.AsCharPtr(), this->file.AsCharPtr());
-
-		// create directory
-		ioServer->CreateDirectory(exportTarget.ExtractToLastSlash());
-
-		// delete edit surface
-		ioServer->DeleteFile("sur:system/editsurface.sur");
-
-		// also convert it
-		Logger logger;
-		BinaryXmlConverter converter;
-		converter.ConvertFile(resName, exportTarget, logger);
-
-		// hmm, now our managed material here will need to be updated, since we made a new material
-		Ptr<Materials::ManagedSurface> prevSurface = this->managedSurface;
-		this->managedSurface = Resources::ResourceManager::Instance()->CreateManagedResource(Surface::RTTI, exportTarget, NULL, true).downcast<Materials::ManagedSurface>();
-        this->surface = this->managedSurface->GetSurface().downcast<MutableSurface>();
-		this->surfaceInstance = this->surface->CreateInstance();
-
-		// get preview state
-		Ptr<PreviewState> previewState = ContentBrowserApp::Instance()->GetPreviewState();
-		previewState->SaveThumbnail(resName);
-		previewState->SetSurface(this->surfaceInstance.upcast<Materials::SurfaceInstance>());
-
-		// deallocate previous surface
-		if (prevSurface.isvalid())
-		{
-			Resources::ResourceManager::Instance()->DiscardManagedResource(prevSurface.upcast<Resources::ManagedResource>());
-		}
-
-		// also send physics update
-		Ptr<ReloadResourceIfExists> msg = ReloadResourceIfExists::Create();
-		msg->SetResourceName(exportTarget);
-		QtRemoteInterfaceAddon::QtRemoteClient::GetClient("editor")->Send(msg.upcast<Messaging::Message>());
-
-		// generate thumbnail
-		resName = String::Sprintf("src:assets/%s/%s_sur.thumb", this->category.AsCharPtr(), this->file.AsCharPtr());
-
-		// mark save button and flip changed bool
-		//this->ui->saveButton->setStyleSheet("background-color: rgb(4, 200, 0); color: white");
-		this->hasChanges = false;
-
-		// update thumbnail
-		this->UpdateThumbnail();
+		SaveTerrain();
 	}
 }
 
@@ -1701,6 +1661,7 @@ TerrainHandler::ResetUI()
 	this->upperLimitFloatMap.clear();
 	this->lowerLimitIntMap.clear();
 	this->upperLimitIntMap.clear();
+	this->textureRadioMap.clear();
 
 	// get layout
 	this->mainLayout = static_cast<QVBoxLayout*>(this->ui->variableFrame->layout());
@@ -1735,6 +1696,99 @@ TerrainHandler::UpdateThumbnail()
 	//this->ui->surfaceThumbnail->setPixmap(pixmap);
 }
 
+
+void TerrainHandler::BrowseTerrainEditorSurface()
+{
+	// get sender
+	QObject* sender = this->sender();
+
+	// must be a button
+	QPushButton* button = static_cast<QPushButton*>(sender);
+
+	// pick a surface
+	button->setStyleSheet("border: 2px solid red;");
+	int res = ResourceBrowser::AssetBrowser::Instance()->Execute("Set surface", ResourceBrowser::AssetBrowser::Surfaces);
+	button->setStyleSheet("");
+	Ptr<PreviewState> previewState = ContentBrowserApp::Instance()->GetPreviewState();
+	if (res == QDialog::Accepted)
+	{
+		if (!isSetup)
+		{
+			BaseHandler::Setup();
+		}
+		
+
+		// avoid discarding changes if the user doesn't want to
+		/*
+		if (this->hasChanges)
+		{
+			QMessageBox::StandardButton button = QMessageBox::warning(NULL, "Pending changes", "Switching material templates will effectively discard all changes, are you sure you want to do this?", QMessageBox::Yes | QMessageBox::Cancel);
+			if (button == QMessageBox::Cancel)
+			{
+				return;
+			}
+			else
+			{
+				this->OnModified();
+			}
+		}
+		*/
+
+		// discard textures managed by this handler
+		IndexT i;
+		for (i = 0; i < this->textureResources.Size(); i++)
+		{
+			Resources::ResourceManager::Instance()->DiscardManagedResource(this->textureResources.ValueAtIndex(i).upcast<Resources::ManagedResource>());
+		}
+		this->textureResources.Clear();
+		this->textureVariables.Clear();
+		this->scalarVariables.Clear();
+		this->textureMasksVarNames.Clear();
+
+		// rebuild the UI
+		this->ResetUI();
+
+		previewState->SetModel(Resources::ResourceId("mdl:terrainmesh/plane.n3"));
+		// convert to nebula string
+		String surface = ResourceBrowser::AssetBrowser::Instance()->GetSelectedTexture().toUtf8().constData();
+
+		
+		String res = surface;
+		res.StripAssignPrefix();
+		res.StripFileExtension();
+		this->category = res.ExtractDirName();
+		this->category.SubstituteString("/", "");
+		this->file = res.ExtractFileName();
+		
+		Ptr<Materials::ManagedSurface> prevManagedSurface = this->managedSurface;
+
+		// create resource
+		this->managedSurface = Resources::ResourceManager::Instance()->CreateManagedResource(Surface::RTTI, surface, NULL, true).downcast<Materials::ManagedSurface>();
+		this->surface = this->managedSurface->GetSurface().downcast<MutableSurface>();
+
+		// create one instance so that the textures are loaded...
+		this->surfaceInstance = this->surface->CreateInstance();
+
+		previewState->SetSurface(this->surfaceInstance.upcast<Materials::SurfaceInstance>());
+
+		MakeMaterialChannels();
+
+		this->terrainAddon->Load(ContentBrowserApp::Instance()->GetPreviewState()->GetModel(), this->surface->CreateInstance().upcast<Materials::SurfaceInstance>(), textureMasksVarNames.Size());
+
+		ui->heightScale_doubleSpinBox->setValue(1);
+		ui->strength_doubleSpinBox->setValue(2);
+		ui->radius_spinBox->setValue(64);
+		ui->blurStrength_doubleSpinBox->setValue(0.1);
+		ui->maxHeight_doubleSpinBox->setValue(1024);
+		MakeBrushTexturesUI(); //this is a bit stupid that i have to load the brushes after i have loaded the terrain
+
+		if (prevManagedSurface.isvalid())
+		{
+			Resources::ResourceManager::Instance()->DiscardManagedResource(prevManagedSurface.upcast<Resources::ManagedResource>());
+		}
+	}
+}
+
 void TerrainHandler::NewTerrain()
 {
 	Ptr<PreviewState> previewState = ContentBrowserApp::Instance()->GetPreviewState();
@@ -1744,14 +1798,7 @@ void TerrainHandler::NewTerrain()
 		previewState->SetModel(Resources::ResourceId("mdl:terrainmesh/plane.n3"));
 
 		this->terrainAddon->Setup(ContentBrowserApp::Instance()->GetPreviewState()->GetModel());
-		//ui->heightMapSize_spinBox->setValue(1024);
-		ui->heightScale_doubleSpinBox->setValue(1);
-		ui->strength_doubleSpinBox->setValue(2);
-		ui->radius_spinBox->setValue(64);
-		ui->blurStrength_doubleSpinBox->setValue(0.1);
-		ui->maxHeight_doubleSpinBox->setValue(1024);
-		MakeBrushTexturesUI();
-
+		
 		// create resource
 		this->managedSurface = Resources::ResourceManager::Instance()->CreateManagedResource(Surface::RTTI, "sur:terraineditorsurfaces/mariusz.sur", NULL, true).downcast<Materials::ManagedSurface>();
 		this->surface = this->managedSurface->GetSurface().downcast<MutableSurface>();
@@ -1761,10 +1808,18 @@ void TerrainHandler::NewTerrain()
 		previewState->SetSurface(this->surfaceInstance.upcast<Materials::SurfaceInstance>());
 		
 		MakeMaterialChannels();
+
+		ui->heightScale_doubleSpinBox->setValue(1);
+		ui->strength_doubleSpinBox->setValue(2);
+		ui->radius_spinBox->setValue(64);
+		ui->blurStrength_doubleSpinBox->setValue(0.1);
+		ui->maxHeight_doubleSpinBox->setValue(1024);
+		MakeBrushTexturesUI();
 	}
 	int newSize = this->ui->heightMapSize_spinBox->value();
 	this->terrainAddon->UpdateTerrainWithNewSize(newSize, newSize);
-
+	this->surface->SetValue("TerrainSize", (float)newSize);
+	
 	//previewState->FocusCameraOnEntity();
 }
 
@@ -1788,6 +1843,7 @@ void TerrainHandler::UpdateHeightMultiplier(double multiplier)
 {
 	VariableFloatCustomFieldChanged(); //updates the slider using box value
 	terrainAddon->UpdateHeightMultiplier((float)multiplier);
+	this->surface->SetValue("HeightMultiplier", (float)multiplier);
 }
 
 void TerrainHandler::BlurCurrentChannel()
@@ -2055,6 +2111,7 @@ void TerrainHandler::MakeMaterialChannels()
 
 			varLayout->addWidget(texRadioButton);
 		}
+		else textureMasksVarNames.Append(name);
 		
 		varLayout->addWidget(texRes);
 		varLayout->addWidget(texImg);

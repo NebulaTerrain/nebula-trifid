@@ -35,9 +35,7 @@ void
 	BrushTexture::Setup(Resources::ResourceId resourceID)
 {
 	texture = Resources::ResourceManager::Instance()->CreateManagedResource(CoreGraphics::Texture::RTTI, resourceID, NULL, true).downcast<Resources::ManagedTexture>();
-	ILenum imageFormat;
-	imageFormat = IL_DDS;
-	ConvertTexture(texture->GetTexture(), imageFormat);
+	ConvertTexture(texture->GetTexture());
 	ResizeTexture(size);
 }
 
@@ -54,7 +52,7 @@ void
 	this->sampledBrushBuffer = 0;
 }
 
-void BrushTexture::ConvertTexture(const Ptr<CoreGraphics::Texture>& tex, ILenum imageFileType)
+void BrushTexture::ConvertTexture(const Ptr<CoreGraphics::Texture>& tex)
 {
 	n_assert(tex->GetType() == CoreGraphics::Texture::Texture2D);
 

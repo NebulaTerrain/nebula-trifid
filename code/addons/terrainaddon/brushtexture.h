@@ -37,7 +37,7 @@ public:
 	int size;
 private:
 		
-	void ConvertTexture(const Ptr<CoreGraphics::Texture>& tex, ILenum imageFileType);
+	void ConvertTexture(const Ptr<CoreGraphics::Texture>& tex);
 	unsigned char* brushTextureBuffer;
 	Ptr<Resources::ManagedTexture> texture;
 		

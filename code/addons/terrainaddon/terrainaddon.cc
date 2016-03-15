@@ -29,10 +29,12 @@ __ImplementClass(Terrain::TerrainAddon, 'TRAD', Core::RefCounted);
 TerrainAddon::TerrainAddon() : 
 	terrainModelEnt(nullptr), 
 	rHeightBuffer(nullptr),
+	brushTool(nullptr),
+	terrainTextureSizeOffset(1),
 	width(1024),
 	height(1024),
-	heightMapHeight(width + 1),
-	heightMapWidth(height + 1),
+	heightMapHeight(width + terrainTextureSizeOffset),
+	heightMapWidth(height + terrainTextureSizeOffset),
 	heightMultiplier(1.f),
 	currentChannel(-1)
 {
@@ -44,6 +46,57 @@ TerrainAddon::TerrainAddon() :
 */
 TerrainAddon::~TerrainAddon()
 {
+}
+
+
+void TerrainAddon::Load(Ptr<Graphics::ModelEntity> modelEntity, Ptr<Materials::SurfaceInstance> surInst, uint numberOfMasks)
+{
+	if (brushTool == nullptr)
+	{
+		brushTool = Terrain::BrushTool::Create();
+		brushTool->Setup();
+	}
+	
+	Discard();
+
+	// load placeholder surface
+	this->defaultManagedSurface = Resources::ResourceManager::Instance()->CreateManagedResource(Materials::Surface::RTTI, "sur:system/placeholder.sur", NULL, true).downcast<Materials::ManagedSurface>();
+
+	SetUpTerrainModel(modelEntity);
+
+	//i must update the local surfaceInstance pointer before steps below
+	SetSurfaceInstance(surInst);
+
+	InitializeTexture(); //dynamic memory texture 
+
+	for (uint i = 0; i < numberOfMasks; i++)
+	{
+		Util::String paramName = Util::String::Sprintf("TextureMask_%d", i + 1);
+		CreateMaskTexutre(paramName); //dynamic memory texture
+	}
+	
+	//this will initialize the height map and terrain size from the height map
+	Ptr<Materials::SurfaceConstant> surConstant = surfaceInstance->GetConstant("HeightMap");
+	Ptr<CoreGraphics::Texture> textureObject = (CoreGraphics::Texture*)surConstant->GetValue().GetObject();
+	
+	width = textureObject->GetWidth() - terrainTextureSizeOffset;
+	height = textureObject->GetHeight() - terrainTextureSizeOffset;
+	UpdateTextureSizeVariables();
+	LoadHeightMapToBuffer(textureObject); //right now height map is an png(clamped to 8 bit) because there are no exporters for dds 32bit per channel 
+
+	//now we must load masks into the buffers
+	for (int i = 0; i < maskVarNames.Size(); i++)
+	{
+		Ptr<Materials::SurfaceConstant> surConstant = surfaceInstance->GetConstant(maskVarNames[i]);
+		Ptr<CoreGraphics::Texture> textureObject = (CoreGraphics::Texture*)surConstant->GetValue().GetObject();
+		LoadMaskToBuffer(textureObject, i);
+	}
+
+	UpdateShaderVariables(); //here we update shader so it uses our dynamic buffers created from textures
+
+	UpdateTerrainMesh();
+
+	UpdateWorldSize();
 }
 
 void
@@ -64,7 +117,7 @@ TerrainAddon::Setup(Ptr<Graphics::ModelEntity> modelEntity)
 
 	UpdateMasks();
 		
-	GetShaderVariables();
+	UpdateShaderVariables();
 
 	UpdateTerrainMesh();
 
@@ -83,10 +136,33 @@ TerrainAddon::Discard()
 	this->heightMultiplierHandle = 0;
 	this->samplerHeightMapHandle = 0;
 
-	Memory::Free(Memory::DefaultHeap, this->rHeightBuffer);
-	this->rHeightBuffer = 0;
+	if (defaultManagedSurface.isvalid())
+	{
+		Resources::ResourceManager::Instance()->DiscardManagedResource(this->defaultManagedSurface.upcast<Resources::ManagedResource>());
+	}
+	
 
-	Resources::ResourceManager::Instance()->UnregisterUnmanagedResource(this->memoryHeightTexture.upcast<Resources::Resource>());
+	if (this->memoryHeightTexture.isvalid())
+	{
+		Resources::ResourceManager::Instance()->UnregisterUnmanagedResource(this->memoryHeightTexture.upcast<Resources::Resource>());
+		Memory::Free(Memory::DefaultHeap, this->rHeightBuffer);
+		this->rHeightBuffer = 0;
+	}
+	
+	for (int i = 0; i < maskTextures.Size(); i++)
+	{
+		Resources::ResourceManager::Instance()->UnregisterUnmanagedResource(maskTextures[i].upcast<Resources::Resource>());
+		Memory::Free(Memory::DefaultHeap, this->maskBuffers[i]);
+		this->maskBuffers[i] = 0;
+		this->maskHandles[i] = 0;
+	}
+
+	maskTextures.Clear();
+	maskBuffers.Clear();
+	maskHandles.Clear();
+	maskVarNames.Clear();
+	vertexData.Clear();
+	indices.Clear();
 }
 
 
@@ -144,13 +220,13 @@ TerrainAddon::SetUpTerrainModel(Ptr<Graphics::ModelEntity> modelEntity)
 	
 	this->terrainShapeNode = terrainShapeNodeInstance->GetModelNode().cast<Models::ShapeNode>();
 	this->terrainMesh = terrainShapeNode->GetManagedMesh()->GetMesh();
-
+	
 	this->vbo = terrainMesh->GetVertexBuffer();
 	this->ibo = terrainMesh->GetIndexBuffer();
 }
 
 void 
-TerrainAddon::GetShaderVariables()
+TerrainAddon::UpdateShaderVariables()
 {
 	//const Ptr<Materials::SurfaceInstance>& surface = terrainShapeNodeInstance->GetSurfaceInstance();
 
@@ -163,7 +239,7 @@ TerrainAddon::GetShaderVariables()
 	this->heightMultiplierHandle->SetValue((float)this->heightMultiplier);
 	this->terrainSizeHandle->SetValue((float)width);
 
-	for (int i = 0; i < maskHandles.Size(); i++)
+	for (int i = 0; i < maskVarNames.Size(); i++)
 	{
 		//mask handles are generated when mask is created
 		//update if necessary:
@@ -497,8 +573,8 @@ void TerrainAddon::UpdateMasks()
 
 void TerrainAddon::UpdateTextureSizeVariables()
 {
-	this->heightMapWidth = width + 1;
-	this->heightMapHeight = height + 1;
+	this->heightMapWidth = width + terrainTextureSizeOffset;
+	this->heightMapHeight = height + terrainTextureSizeOffset;
 }
 
 void TerrainAddon::SaveHeightMap(Util::String path)
@@ -516,7 +592,7 @@ void TerrainAddon::SaveMasks(Util::String path)
 {
 	for (int i = 0; i < maskTextures.Size(); i++)
 	{
-		Util::String resName = Util::String::Sprintf("%s%d.png", path.AsCharPtr(), i+1);
+		Util::String resName = Util::String::Sprintf("%s_%d.png", path.AsCharPtr(), i+1);
 		Ptr<CoreGraphics::StreamTextureSaver> saver = CoreGraphics::StreamTextureSaver::Create();
 		Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(resName);
 		saver->SetFormat(CoreGraphics::ImageFileFormat::PNG);
@@ -527,5 +603,161 @@ void TerrainAddon::SaveMasks(Util::String path)
 	}
 	
 }
+
+void
+TerrainAddon::LoadHeightMapToBuffer(const Ptr<CoreGraphics::Texture>& tex)
+{
+	n_assert(tex->GetType() == CoreGraphics::Texture::Texture2D);
+
+	// create il image
+	ILint image = ilGenImage();
+	ilBindImage(image);
+
+	// convert our pixel formats to IL components
+	ILuint channels;
+	ILuint format;
+	ILuint type;
+	channels = CoreGraphics::PixelFormat::ToChannels(tex->GetPixelFormat());
+	format = CoreGraphics::PixelFormat::ToILComponents(tex->GetPixelFormat());
+	type = CoreGraphics::PixelFormat::ToILType(tex->GetPixelFormat());
+
+	CoreGraphics::Texture::MapInfo mapInfo;
+	tex->Map(0, Base::ResourceBase::MapRead, mapInfo);
+
+	// create image
+	ILboolean result = ilTexImage(mapInfo.mipWidth, mapInfo.mipHeight, 1, channels, format, type, (ILubyte*)mapInfo.data);
+	n_assert(result == IL_TRUE);
+
+	// flip image if it's a GL texture
+	if (!tex->IsRenderTargetAttachment())
+	{
+		iluFlipImage();
+	}
+
+	// now save as PNG (will support proper alpha)
+	ilConvertImage(IL_RGBA, IL_UNSIGNED_BYTE); // we convert to 8 bit rgba
+	ILubyte* uncompressedData = ilGetData();
+
+	Resources::ResourceId resName = memoryHeightTexture->GetResourceId();
+	this->memoryHeightTexture->Unload();
+	Memory::Free(Memory::DefaultHeap, this->rHeightBuffer);
+	this->rHeightBuffer = 0;
+
+	SizeT frameSizeInBytes = (this->heightMapWidth) * (this->heightMapHeight)*sizeof(float); //if texture is float then sizeof float
+	this->rHeightBuffer = (float*)Memory::Alloc(Memory::DefaultHeap, frameSizeInBytes);
+	
+	int j = 0;
+	int frameSize = (this->heightMapWidth) * (this->heightMapHeight);
+	for (int i = 0; i < frameSize; i++)
+	{
+		rHeightBuffer[i] = (float)uncompressedData[j];
+		j += 4; //we skip every 4 index to read only r channel
+		//if we convert the height-map to float(32bit per channel) texture instead
+		//then we will have to skip by 4*sizeof(float)
+	}
+
+	Ptr<CoreGraphics::MemoryTextureLoader> loader = CoreGraphics::MemoryTextureLoader::Create();
+	loader->SetImageBuffer(this->rHeightBuffer, this->heightMapWidth, this->heightMapHeight, CoreGraphics::PixelFormat::R32F);
+	this->memoryHeightTexture->SetLoader(loader.upcast<Resources::ResourceLoader>());
+	this->memoryHeightTexture->SetAsyncEnabled(false);
+	this->memoryHeightTexture->SetResourceId(resName);
+	this->memoryHeightTexture->Load();
+	n_assert(this->memoryHeightTexture->IsLoaded());
+	this->memoryHeightTexture->SetLoader(0);
+
+	currentBuffer = rHeightBuffer;
+
+	tex->Unmap(0);
+
+
+	ilDeleteImage(image);	
+}
+
+void
+TerrainAddon::LoadMaskToBuffer(const Ptr<CoreGraphics::Texture>& tex, uint id)
+{
+	n_assert(tex->GetType() == CoreGraphics::Texture::Texture2D);
+
+	// create il image
+	ILint image = ilGenImage();
+	ilBindImage(image);
+
+	// convert our pixel formats to IL components
+	ILuint channels;
+	ILuint format;
+	ILuint type;
+	channels = CoreGraphics::PixelFormat::ToChannels(tex->GetPixelFormat());
+	format = CoreGraphics::PixelFormat::ToILComponents(tex->GetPixelFormat());
+	type = CoreGraphics::PixelFormat::ToILType(tex->GetPixelFormat());
+
+	CoreGraphics::Texture::MapInfo mapInfo;
+	tex->Map(0, Base::ResourceBase::MapRead, mapInfo);
+
+	// create image
+	ILboolean result = ilTexImage(mapInfo.mipWidth, mapInfo.mipHeight, 1, channels, format, type, (ILubyte*)mapInfo.data);
+	n_assert(result == IL_TRUE);
+
+	// flip image if it's a GL texture
+	if (!tex->IsRenderTargetAttachment())
+	{
+		iluFlipImage();
+	}
+
+	// now save as PNG (will support proper alpha)
+	ilConvertImage(IL_RGBA, IL_UNSIGNED_BYTE);
+	ILubyte* uncompressedData = ilGetData();
+
+	Ptr<CoreGraphics::Texture>& maskDynamicTexture = maskTextures[id];
+	
+
+	Resources::ResourceId resName = maskDynamicTexture->GetResourceId(); //just an id for dynamic resource
+
+	maskDynamicTexture->Unload();
+	Memory::Free(Memory::DefaultHeap, maskBuffers[id]);
+	maskBuffers[id] = 0;
+	
+	int numberOfChannels = 4;
+	SizeT frameSize = (this->heightMapWidth) * (this->heightMapHeight) * sizeof(unsigned char) * numberOfChannels; //4 channels 1 byte per channel - 8 bit channels
+	maskBuffers[id] = (unsigned char*)Memory::Alloc(Memory::DefaultHeap, frameSize);
+	Memory::Clear(maskBuffers[id], frameSize);
+
+	//here we load the texture from file to the buffer
+	int j = 0;
+	unsigned char* maskDynamicBuffer = maskBuffers[id];
+	for (int i = 0; i < frameSize; i++)
+	{
+		maskDynamicBuffer[i] = (unsigned char)uncompressedData[i];
+	}
+
+	Ptr<CoreGraphics::MemoryTextureLoader> loader = CoreGraphics::MemoryTextureLoader::Create();
+	loader->SetImageBuffer(maskDynamicBuffer, this->heightMapWidth, this->heightMapHeight, CoreGraphics::PixelFormat::SRGBA8);
+	maskDynamicTexture->SetLoader(loader.upcast<Resources::ResourceLoader>());
+	maskDynamicTexture->SetAsyncEnabled(false);
+	maskDynamicTexture->SetResourceId(resName);
+	maskDynamicTexture->Load();
+	n_assert(maskDynamicTexture->IsLoaded());
+	maskDynamicTexture->SetLoader(0);
+
+	tex->Unmap(0);
+
+
+	ilDeleteImage(image);
+}
+
+void TerrainAddon::SetSurfaceInstance(Ptr<Materials::SurfaceInstance> surInst)
+{
+	surfaceInstance = surInst;
+	terrainShapeNodeInstance->SetSurfaceInstance(surInst);
+}
+
+void TerrainAddon::DiscardSurfaceInstance()
+{
+	surfaceInstance = defaultManagedSurface->GetSurface()->CreateInstance();
+	terrainShapeNodeInstance->SetSurfaceInstance(surfaceInstance);
+}
+
+
+
+
 
 } // namespace Terrain

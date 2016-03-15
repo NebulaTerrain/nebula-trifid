@@ -106,6 +106,11 @@ private slots:
 
 	void SaveHeightMap();
 	void SaveMasks();
+	void SaveSruface();
+	void SaveTerrain();
+
+
+	void BrowseTerrainEditorSurface();
 
     /// called whenever a material is selected
     void MaterialSelected(const QString& material);
@@ -145,6 +150,8 @@ private slots:
 	void Save();
 	/// save material as another file
 	void SaveAs();
+	
+	
 
 	/// called whenever we create a new dialog
 	void OnNewCategory();
@@ -245,6 +252,8 @@ private:
 	Util::String file;
 	QMap<QSlider*, QDoubleSpinBox*> sliderToDoubleSpinMap;
 	QMap<QPushButton*, uint> brushTexturesMap;
+	Util::Array<Util::String> textureMasksVarNames;
+	Util::Array<Ptr<CoreGraphics::Texture>> textureMasksTextures;
 };
 
 //------------------------------------------------------------------------------
@@ -289,9 +298,11 @@ TerrainHandler::SetUI(Ui::TerrainWidget* ui)
 	connect(this->ui->maxHeight_horizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(VariableFloatCustomSliderChanged()));
 	connect(this->ui->maxHeight_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateBrushMaxHeight(double))); 
 	sliderToDoubleSpinMap[this->ui->maxHeight_horizontalSlider] = this->ui->maxHeight_doubleSpinBox;
-	connect(this->ui->saveHeightMap_pushButton, SIGNAL(clicked()), this, SLOT(SaveHeightMap()));
-	connect(this->ui->saveMasks_pushButton, SIGNAL(clicked()), this, SLOT(SaveMasks()));
 
+	connect(this->ui->save_pushButton, SIGNAL(clicked()), this, SLOT(Save()));
+	connect(this->ui->saveAs_pushButton, SIGNAL(clicked()), this, SLOT(SaveAs()));
+
+	connect(this->ui->browse_pushButton, SIGNAL(clicked()), this, SLOT(BrowseTerrainEditorSurface()));
 	// setup terrain
 	this->terrainAddon = Terrain::TerrainAddon::Create();
 	
