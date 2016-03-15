@@ -81,6 +81,12 @@ public:
 	void OnVisibilityResolve(IndexT frameIndex, IndexT resolveIndex, const Math::matrix44& cameraTransform, bool updateLod);
     /// calls ModelInstance::OnVisibilityResolve(...) + updating screen space stats
     void UpdateRenderStats(const Math::matrix44& cameraTransform);
+	/// called when the entity becomes visible with current time
+	void OnShow(Timing::Time time);
+	/// called when the entity becomes invisible
+	void OnHide(Timing::Time time);
+	/// set pointer to ModelEntity which owns this instance
+	void SetModelEntity(const Ptr<Graphics::ModelEntity>& mdlEntity);
 
     /// render node specific debug shape
     void RenderDebug();
@@ -88,19 +94,12 @@ public:
 protected:
     friend class Model;
     friend class VisResolver;
-    friend class Graphics::ModelEntity;
-	friend class Graphics::BillboardEntity;
 
     /// setup the ModelInstance from a root model node
     void Setup(const Ptr<Model>& model, const Ptr<ModelNode>& rootModelNode);
     /// cleanup and unlink from model
     void Discard();
-    /// set pointer to ModelEntity which owns this instance
-    void SetModelEntity(const Ptr<Graphics::ModelEntity>& mdlEntity);
-    /// called when the entity becomes visible with current time
-    void OnShow(Timing::Time time);
-    /// called when the entity becomes invisible
-    void OnHide(Timing::Time time);
+
 
     Ptr<Model> model;
     Ptr<ModelNode> modelNode;
