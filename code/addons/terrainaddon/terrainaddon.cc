@@ -717,6 +717,7 @@ TerrainAddon::LoadMaskToBuffer(const Ptr<CoreGraphics::Texture>& tex, uint id)
 	maskBuffers[id] = 0;
 	
 	int numberOfChannels = 4;
+	//masks have to be of the same size as the height-map
 	SizeT frameSize = (this->heightMapWidth) * (this->heightMapHeight) * sizeof(unsigned char) * numberOfChannels; //4 channels 1 byte per channel - 8 bit channels
 	maskBuffers[id] = (unsigned char*)Memory::Alloc(Memory::DefaultHeap, frameSize);
 	Memory::Clear(maskBuffers[id], frameSize);

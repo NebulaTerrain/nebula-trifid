@@ -18,6 +18,7 @@
 #include "converters/binaryxmlconverter.h"
 #include "logger.h"
 #include "messaging/staticmessagehandler.h"
+#include "applauncher.h"
 
 #include <QDialog>
 #include <QGroupBox>
@@ -704,7 +705,8 @@ TerrainHandler::VariableIntLimitsChanged()
 }
 
 //------------------------------------------------------------------------------
-/**
+/** 
+No Export
 */
 void
 TerrainHandler::Save()
@@ -723,6 +725,27 @@ TerrainHandler::Save()
 		}
 	}
 	SaveTerrain();
+}
+
+//------------------------------------------------------------------------------
+/**
+No Export
+*/
+void
+TerrainHandler::SaveAs()
+{
+	// update UI
+	this->saveDialogUi.categoryBox->setCurrentIndex(this->saveDialogUi.categoryBox->findText(this->category.AsCharPtr()));
+	this->saveDialogUi.nameEdit->setText(this->file.AsCharPtr());
+
+	// open dialog
+	if (this->saveDialog.exec() == QDialog::Accepted)
+	{
+		this->category = this->saveDialogUi.categoryBox->currentText().toUtf8().constData();
+		this->file = this->saveDialogUi.nameEdit->text().toUtf8().constData();
+
+		SaveTerrain();
+	}
 }
 
 void 
@@ -753,8 +776,8 @@ TerrainHandler::SaveSruface()
 	//we use mutable surface to save
 	//and we use it as well to set values
 	//let's rename the bound textures
-	String texResName = String::Sprintf("tex:%s/%s.png", this->category.AsCharPtr(), this->file.AsCharPtr());
-	Ptr<Resources::ManagedTexture> textureObject = Resources::ResourceManager::Instance()->CreateManagedResource(CoreGraphics::Texture::RTTI, texResName, NULL, true).downcast<Resources::ManagedTexture>();
+	String texResName = String::Sprintf("tex:%s/%s", this->category.AsCharPtr(), this->file.AsCharPtr());
+	Ptr<Resources::ManagedTexture> textureObject = Resources::ResourceManager::Instance()->CreateManagedResource(CoreGraphics::Texture::RTTI, texResName + NEBULA3_TEXTURE_EXTENSION, NULL, true).downcast<Resources::ManagedTexture>();
 
 	Util::Variant var;
 	var.SetType(Util::Variant::Object);
@@ -763,8 +786,8 @@ TerrainHandler::SaveSruface()
 
 	for (int i = 0; i < this->textureMasksVarNames.Size(); i++)
 	{
-		texResName = String::Sprintf("tex:%s/%s_%d.png", this->category.AsCharPtr(), this->file.AsCharPtr(), i + 1);
-		textureObject = Resources::ResourceManager::Instance()->CreateManagedResource(CoreGraphics::Texture::RTTI, texResName, NULL, true).downcast<Resources::ManagedTexture>();
+		texResName = String::Sprintf("tex:%s/%s_%d", this->category.AsCharPtr(), this->file.AsCharPtr(), i + 1);
+		textureObject = Resources::ResourceManager::Instance()->CreateManagedResource(CoreGraphics::Texture::RTTI, texResName + NEBULA3_TEXTURE_EXTENSION, NULL, true).downcast<Resources::ManagedTexture>();
 		var.SetObject(textureObject->GetTexture());
 		this->surface->SetValue(textureMasksVarNames[i], var);
 	}
@@ -806,12 +829,37 @@ void TerrainHandler::SaveTerrain()
 	SaveSruface();
 }
 
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
-TerrainHandler::SaveAs()
+TerrainHandler::SaveAndExport()
+{
+	if (this->category.IsEmpty() || this->file.IsEmpty())
+	{
+		if (this->saveDialog.exec() == QDialog::Accepted)
+		{
+			this->category = this->saveDialogUi.categoryBox->currentText().toUtf8().constData();
+			this->file = this->saveDialogUi.nameEdit->text().toUtf8().constData();
+		}
+		else
+		{
+			// just abort
+			return;
+		}
+	}
+	SaveHeightMap();
+	ExportTexture("png");
+	SaveMasks();
+	Util::String maskName = this->file;
+	for (int i = 0; i < textureMasksVarNames.Size(); i++)
+	{
+		this->file.Format("%s_%d", maskName.AsCharPtr(), i + 1);
+		ExportTexture("png");
+	}
+	this->file = maskName;
+	SaveSruface();
+}
+
+void
+TerrainHandler::SaveAsAndExport()
 {
 	// update UI
 	this->saveDialogUi.categoryBox->setCurrentIndex(this->saveDialogUi.categoryBox->findText(this->category.AsCharPtr()));
@@ -823,9 +871,11 @@ TerrainHandler::SaveAs()
 		this->category = this->saveDialogUi.categoryBox->currentText().toUtf8().constData();
 		this->file = this->saveDialogUi.nameEdit->text().toUtf8().constData();
 
-		SaveTerrain();
+		SaveAndExport();
 	}
 }
+
+
 
 //------------------------------------------------------------------------------
 /**
@@ -1752,7 +1802,6 @@ void TerrainHandler::BrowseTerrainEditorSurface()
 		// convert to nebula string
 		String surface = ResourceBrowser::AssetBrowser::Instance()->GetSelectedTexture().toUtf8().constData();
 
-		
 		String res = surface;
 		res.StripAssignPrefix();
 		res.StripFileExtension();
@@ -1819,7 +1868,8 @@ void TerrainHandler::NewTerrain()
 	int newSize = this->ui->heightMapSize_spinBox->value();
 	this->terrainAddon->UpdateTerrainWithNewSize(newSize, newSize);
 	this->surface->SetValue("TerrainSize", (float)newSize);
-	
+	this->file.Clear();
+	this->category.Clear();
 	//previewState->FocusCameraOnEntity();
 }
 
@@ -2029,7 +2079,6 @@ void TerrainHandler::SaveMasks()
 		}
 	}
 
-
 	String resName = String::Sprintf("src:assets/%s/%s", this->category.AsCharPtr(), this->file.AsCharPtr());
 	terrainAddon->SaveMasks(resName);
 }
@@ -2215,7 +2264,8 @@ void TerrainHandler::MakeMaterialChannels()
 	}
 }
 
-void TerrainHandler::SwitchChannel()
+void
+TerrainHandler::SwitchChannel()
 {
 
 	// get sender
@@ -2234,6 +2284,48 @@ void TerrainHandler::SwitchChannel()
 	}
 }
 
+void
+TerrainHandler::ExportTexture(const Util::String& ext)
+{
+	// launch exporter to reexport resource
+	AppLauncher launcher;
+#if _DEBUG
+	launcher.SetExecutable("bin:texturebatcher3.debug.exe");
+#else
+	launcher.SetExecutable("bin:texturebatcher3.exe");
+#endif
 
+	String path;
+	path.Format("src:assets/%s/", this->category.AsCharPtr());
+
+	// find texture in work
+	Array<String> origTex = IO::IoServer::Instance()->ListFiles(path, this->file + "." + ext);
+
+	// we should only be able to find one
+	if (origTex.Size() == 1)
+	{
+		String arguments;
+		arguments.Format("-dir %s -file %s -force", this->category.AsCharPtr(), origTex[0].AsCharPtr());
+		launcher.SetArguments(arguments);
+		launcher.SetWorkingDirectory("tex:");
+		launcher.SetNoConsoleWindow(true);
+
+		// finally launch exporter
+		if (launcher.LaunchWait())
+		{
+			// format resource
+			String resource;
+			resource.Format("tex:%s/%s", this->category.AsCharPtr(), this->file.AsCharPtr());
+
+			// then tell graphics to reload texture
+			Ptr<ReloadResourceIfExists> reloadMessage = ReloadResourceIfExists::Create();
+			reloadMessage->SetResourceName(resource);
+			GraphicsInterface::Instance()->Send(reloadMessage.upcast<Messaging::Message>());
+
+			// send modification message to remote end
+			QtRemoteInterfaceAddon::QtRemoteClient::GetClient("editor")->Send(reloadMessage.upcast<Messaging::Message>());
+		}
+	}
+}
 
 } // namespace Widgets

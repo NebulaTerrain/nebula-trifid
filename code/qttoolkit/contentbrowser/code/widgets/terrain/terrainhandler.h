@@ -108,7 +108,8 @@ private slots:
 	void SaveMasks();
 	void SaveSruface();
 	void SaveTerrain();
-
+	void SaveAndExport();
+	void SaveAsAndExport();
 
 	void BrowseTerrainEditorSurface();
 
@@ -188,6 +189,7 @@ private:
 	void UpdateThumbnail();
 
 	bool eventFilter(QObject *obj, QEvent *ev);
+	void ExportTexture(const Util::String& ext);
 	
 
 	Ptr<Terrain::TerrainAddon> terrainAddon;
@@ -299,8 +301,8 @@ TerrainHandler::SetUI(Ui::TerrainWidget* ui)
 	connect(this->ui->maxHeight_doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(UpdateBrushMaxHeight(double))); 
 	sliderToDoubleSpinMap[this->ui->maxHeight_horizontalSlider] = this->ui->maxHeight_doubleSpinBox;
 
-	connect(this->ui->save_pushButton, SIGNAL(clicked()), this, SLOT(Save()));
-	connect(this->ui->saveAs_pushButton, SIGNAL(clicked()), this, SLOT(SaveAs()));
+	connect(this->ui->saveAndExport_pushButton, SIGNAL(clicked()), this, SLOT(SaveAndExport()));
+	connect(this->ui->saveAsAndExport_pushButton, SIGNAL(clicked()), this, SLOT(SaveAsAndExport()));
 
 	connect(this->ui->browse_pushButton, SIGNAL(clicked()), this, SLOT(BrowseTerrainEditorSurface()));
 	// setup terrain
