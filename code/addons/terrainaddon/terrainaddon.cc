@@ -49,7 +49,8 @@ TerrainAddon::~TerrainAddon()
 }
 
 
-void TerrainAddon::LoadMaskFromTexture(const Ptr<CoreGraphics::Texture>& textureObject, const Util::String& maskVarName)
+void 
+TerrainAddon::LoadMaskFromTexture(const Ptr<CoreGraphics::Texture>& textureObject, const Util::String& maskVarName)
 {
 	if (textureObject->GetWidth() == heightMapWidth) 
 	{
@@ -66,7 +67,8 @@ void TerrainAddon::LoadMaskFromTexture(const Ptr<CoreGraphics::Texture>& texture
 	UpdateShaderVariables(); //here we update shader so it uses our dynamic buffers created from textures
 }
 
-void TerrainAddon::LoadHeightMapFromTexture(const Ptr<CoreGraphics::Texture>& textureObject)
+void 
+TerrainAddon::LoadHeightMapFromTexture(const Ptr<CoreGraphics::Texture>& textureObject)
 {
 	if (textureObject->GetWidth() == heightMapWidth)
 	{
@@ -86,7 +88,8 @@ void TerrainAddon::LoadHeightMapFromTexture(const Ptr<CoreGraphics::Texture>& te
 }
 
 
-void TerrainAddon::Load(Ptr<Graphics::ModelEntity> modelEntity, Ptr<Materials::SurfaceInstance> surInst, uint numberOfMasks)
+void 
+TerrainAddon::Load(Ptr<Graphics::ModelEntity> modelEntity, Ptr<Materials::SurfaceInstance> surInst, uint numberOfMasks)
 {
 	if (brushTool == nullptr)
 	{
@@ -790,8 +793,11 @@ void TerrainAddon::SetSurfaceInstance(Ptr<Materials::SurfaceInstance> surInst)
 
 void TerrainAddon::DiscardSurfaceInstance()
 {
-	surfaceInstance = defaultManagedSurface->GetSurface()->CreateInstance();
-	terrainShapeNodeInstance->SetSurfaceInstance(surfaceInstance);
+	if (defaultManagedSurface.isvalid())
+	{
+		surfaceInstance = defaultManagedSurface->GetSurface()->CreateInstance();
+		terrainShapeNodeInstance->SetSurfaceInstance(surfaceInstance);
+	}
 }
 
 
