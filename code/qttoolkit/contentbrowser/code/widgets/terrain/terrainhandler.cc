@@ -298,6 +298,77 @@ TerrainHandler::Browse()
     }
 }
 
+
+
+void
+TerrainHandler::BrowseHeightMap()
+{
+	// get sender
+	QObject* sender = this->sender();
+
+	// must be a button
+	QPushButton* button = static_cast<QPushButton*>(sender);
+
+	// get line edit
+	QLineEdit* text = this->textureTextMap.key(this->textureImgMap[button]);
+	QLabel* name = this->textureLabelMap.key(this->textureImgMap[button]);
+
+	// pick a texture
+	button->setStyleSheet("border: 2px solid red;");
+	int res = ResourceBrowser::AssetBrowser::Instance()->Execute("Assign to: " + name->text(), ResourceBrowser::AssetBrowser::Textures);
+	button->setStyleSheet("");
+	if (res == QDialog::Accepted)
+	{
+		// convert to nebula string
+		String texture = ResourceBrowser::AssetBrowser::Instance()->GetSelectedTexture().toUtf8().constData();
+
+		// set text of item
+		text->setText(texture.AsCharPtr());
+
+		// invoke texture change function
+		uint id = this->textureImgMap[button];
+		this->TextureChanged(id);
+
+		terrainAddon->LoadHeightMapFromTexture(this->textureResources[id]->GetTexture());
+	}
+}
+
+void
+TerrainHandler::BrowseMask()
+{
+	// get sender
+	QObject* sender = this->sender();
+
+	// must be a button
+	QPushButton* button = static_cast<QPushButton*>(sender);
+
+	// get line edit
+	QLineEdit* text = this->textureTextMap.key(this->textureImgMap[button]);
+	QLabel* name = this->textureLabelMap.key(this->textureImgMap[button]);
+
+	// pick a texture
+	button->setStyleSheet("border: 2px solid red;");
+	int res = ResourceBrowser::AssetBrowser::Instance()->Execute("Assign to: " + name->text(), ResourceBrowser::AssetBrowser::Textures);
+	button->setStyleSheet("");
+	if (res == QDialog::Accepted)
+	{
+		// convert to nebula string
+		String texture = ResourceBrowser::AssetBrowser::Instance()->GetSelectedTexture().toUtf8().constData();
+
+		// set text of item
+		text->setText(texture.AsCharPtr());
+
+		// invoke texture change function
+		uint id = this->textureImgMap[button];
+		this->TextureChanged(id);
+
+		this->textureResources[id];
+
+		terrainAddon->LoadMaskFromTexture(this->textureResources[id]->GetTexture(), this->textureVariables[id].AsString());
+	}
+}
+
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -306,7 +377,7 @@ TerrainHandler::TextureChanged(uint i)
 {
     // cast as line edit
     QLineEdit* item = this->textureTextMap.key(i);
-    item->setEnabled(true);
+    //item->setEnabled(true);
 
     // get label
     QLabel* label = this->textureLabelMap.key(i);
@@ -2136,10 +2207,6 @@ void TerrainHandler::MakeMaterialChannels()
 		this->textureImgMap[texImg] = i;
 		this->textureLabelMap[texName] = i;
 
-		// connect slots
-		connect(texImg, SIGNAL(released()), this, SLOT(Browse()));
-		connect(texRes, SIGNAL(editingFinished()), this, SLOT(TextureTextChanged()));
-
 		// add stuff to layout
 		varLayout->addWidget(texName);
 
@@ -2162,6 +2229,24 @@ void TerrainHandler::MakeMaterialChannels()
 		}
 		else textureMasksVarNames.Append(name);
 		
+		if (temp == "TextureMask")
+		{
+			connect(texImg, SIGNAL(clicked()), this, SLOT(BrowseMask()));
+			texRes->setDisabled(true);
+		}
+		else if (temp == "HeightMap")
+		{
+			connect(texImg, SIGNAL(clicked()), this, SLOT(BrowseHeightMap()));
+			texRes->setDisabled(true);
+		}
+		else
+		{
+			// connect slots
+			connect(texImg, SIGNAL(released()), this, SLOT(Browse()));
+			connect(texRes, SIGNAL(editingFinished()), this, SLOT(TextureTextChanged()));
+		}
+		
+
 		varLayout->addWidget(texRes);
 		varLayout->addWidget(texImg);
 

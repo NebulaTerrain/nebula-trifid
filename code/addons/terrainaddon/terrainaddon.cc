@@ -49,6 +49,43 @@ TerrainAddon::~TerrainAddon()
 }
 
 
+void TerrainAddon::LoadMaskFromTexture(const Ptr<CoreGraphics::Texture>& textureObject, const Util::String& maskVarName)
+{
+	if (textureObject->GetWidth() == heightMapWidth) 
+	{
+		//now we must load masks into the buffers
+		for (int i = 0; i < maskVarNames.Size(); i++)
+		{
+			if (maskVarNames[i] == maskVarName)
+			{
+				LoadMaskToBuffer(textureObject, i);
+			}
+		}
+	}
+
+	UpdateShaderVariables(); //here we update shader so it uses our dynamic buffers created from textures
+}
+
+void TerrainAddon::LoadHeightMapFromTexture(const Ptr<CoreGraphics::Texture>& textureObject)
+{
+	if (textureObject->GetWidth() == heightMapWidth)
+	{
+		LoadHeightMapToBuffer(textureObject); //right now height map is an png(clamped to 8 bit) because there are no exporters for dds 32bit per channel 
+	}
+	else
+	{
+		width = textureObject->GetWidth() - terrainTextureSizeOffset;
+		height = textureObject->GetHeight() - terrainTextureSizeOffset;
+		UpdateTextureSizeVariables();
+		UpdateTerrainWithNewSize(width, height);
+
+		LoadHeightMapToBuffer(textureObject); //right now height map is an png(clamped to 8 bit) because there are no exporters for dds 32bit per channel 
+	}
+
+	UpdateShaderVariables(); //here we update shader so it uses our dynamic buffers created from textures
+}
+
+
 void TerrainAddon::Load(Ptr<Graphics::ModelEntity> modelEntity, Ptr<Materials::SurfaceInstance> surInst, uint numberOfMasks)
 {
 	if (brushTool == nullptr)

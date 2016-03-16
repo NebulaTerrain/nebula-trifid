@@ -68,9 +68,11 @@ public:
 
 	void SaveHeightMap(Util::String path);
 	void SaveMasks(Util::String path);
-
+	void LoadHeightMapFromTexture(const Ptr<CoreGraphics::Texture>& tex);
+	void LoadMaskFromTexture(const Ptr<CoreGraphics::Texture>& tex, const Util::String& maskVarName);
 private:
 
+	
 	void LoadHeightMapToBuffer(const Ptr<CoreGraphics::Texture>& tex);
 	void LoadMaskToBuffer(const Ptr<CoreGraphics::Texture>& tex, uint i);
 	#pragma pack (push)

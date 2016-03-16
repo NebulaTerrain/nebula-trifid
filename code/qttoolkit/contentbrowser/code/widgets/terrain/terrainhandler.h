@@ -147,6 +147,9 @@ private slots:
     /// called whenever the browse button is pressed
     void Browse();
 
+	void BrowseHeightMap();
+	void BrowseMask();
+
 	/// called whenever the save button is clicked
 	void Save();
 	/// save material as another file
